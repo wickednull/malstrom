@@ -60,6 +60,7 @@ The rogue AP runs on a virtual interface (`ap0`) carved from a spare radio to pr
 ```
 > ⚠️ IMPORTANT
 > This tool is intended for authorized penetration testing, network troubleshooting, or educational research only. Unauthorized use against networks you do not own or have explicit permission to test is illegal.
+>
 > 
 ✨ Features
  * Zero-Configuration Deployment: Single command installation script that automatically sets up system dependencies, Python environments, and binary shortcuts.
@@ -70,6 +71,7 @@ The rogue AP runs on a virtual interface (`ap0`) carved from a spare radio to pr
  * Integrated Post-Exploitation: Automated nmap scanning, netexec credential spraying (SMB, SSH, RDP, WinRM), and Responder LLMNR/mDNS/NBT-NS poisoning.
  * C2 Session Management: Generates lightweight payload beacons for POSIX (sh) and Windows (PowerShell) targets.
 
+
 🛠️ Requirements
  * Hardware: Minimum 2 WiFi interfaces (1 supporting monitor mode/injection + 1 supporting AP mode).
  * OS: Linux (Kernel 5.x or newer with root privileges).
@@ -77,6 +79,7 @@ The rogue AP runs on a virtual interface (`ap0`) carved from a spare radio to pr
    * Core Binaries: bash, python3 (3.9+), hostapd, dnsmasq, iptables, iw, aireplay-ng, tcpdump
    * Post-Ex Binaries: nmap, netexec, responder
      
+
 📋 Table of Contents
  * Installation
  * Usage
@@ -88,8 +91,12 @@ The rogue AP runs on a virtual interface (`ap0`) carved from a spare radio to pr
  * Contributing
  * Disclaimer
  * License
+
+
 ⚙️ Installation
+
 🚀 One-Line Quick Install
+
 Run the quick setup script to install all required dependencies, clone the repository, and register system symlinks:
 
 ```text
@@ -98,6 +105,7 @@ curl -sSL [https://raw.githubusercontent.com/wickednull/malstrom/main/install.sh
 
 🔧 Manual Installation
 If preferred, clone the repository and run setup manually:
+
 # 1. Clone the repository
 ```text
 git clone [https://github.com/wickednull/malstrom.git](https://github.com/wickednull/malstrom.git)
@@ -188,6 +196,7 @@ Deauth Operating Modes
 | targeted | Limits deauth frames exclusively to discovered client MACs on the target AP. |
 | adaptive | Operates silently, triggering targeted deauth bursts only when client traffic is observed. |
 | off | Disables frame injection; keeps passive capture and evil-twin portals active. |
+
 📝 Loot Storage & Maintenance
 Harvested data is stored locally in ~/loot/malstrom/ (or /var/lib/malstrom when executed as a system service):
 ~/loot/malstrom/
@@ -236,9 +245,15 @@ Contributions are welcome!
  * Commit your changes (git commit -m 'Add amazing feature').
  * Push to the branch (git push origin feature/amazing-feature).
  * Open a Pull Request.
+
+
+
 ⚠️ Disclaimer
 Use at your own risk. The authors assume no liability for misuse or damage caused by this tool. MALSTROM is provided as-is for security research and authorized testing only. Always obtain proper written permission before testing on any network or device.
+
+
 📄 License
+
 Distributed under the MIT License. See LICENSE for details.
 <p align="center">
 <b>Project Link:</b> <a href="https://github.com/wickednull/malstrom">github.com/wickednull/malstrom</a>
