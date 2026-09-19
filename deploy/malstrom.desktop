@@ -1,0 +1,12 @@
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=MALSTROM
+GenericName=Evil-twin kill chain
+Comment=Professional wireless security assessment suite: clone APs, deauth, captive portal
+Exec=/usr/local/bin/malstrom launch
+Icon=malstrom
+Terminal=false
+Categories=Network;Security;Utility;
+Keywords=wifi;ap;deauth;captive;portal;pentest;rogue;
+StartupNotify=false

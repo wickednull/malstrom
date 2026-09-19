@@ -1,0 +1,937 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MALSTROM — WiFi Attack &amp; Post-Exploitation Console</title>
+<link rel="icon" href="assets/favicon.png" type="image/png">
+<link rel="stylesheet" href="css/malstrom.css">
+</head>
+<body>
+<div id="auth-gate">
+  <div class="auth-grid" aria-hidden="true"></div>
+  <div class="authbox">
+    <div class="auth-emblem">
+      <img class="auth-logo" src="assets/logo.png" alt="">
+      <img class="auth-word" src="assets/wordmark.png" alt="MALSTROM">
+    </div>
+    <div class="s">WiFi Attack &amp; Post-Exploitation Console</div>
+    <div class="auth-divider"><span></span></div>
+    <div class="auth-field">
+      <label class="f" for="auth-token">Access key</label>
+      <input id="auth-token" type="password" placeholder="PASSWORD" autocomplete="current-password" autofocus>
+      <button class="btn primary" id="auth-submit">ENTER</button>
+    </div>
+    <div class="hint" id="auth-hint">Set with: <code>sudo malstrom passwd &lt;new&gt;</code> — or shown by <code>malstrom start</code></div>
+    <div class="auth-status"><span class="dot"></span>Secure channel established&nbsp;&nbsp;·&nbsp;&nbsp;awaiting credentials</div>
+  </div>
+  <div class="auth-accent" aria-hidden="true"></div>
+</div>
+
+<div id="app" style="display:none">
+  <aside>
+    <div class="logo">
+      <img class="side-skull" src="assets/skull.png" alt="">
+      <img class="side-wordmark" src="assets/wordmark.png" alt="MALSTROM">
+    </div>
+
+    <h3>Overview</h3>
+    <button class="nav-item active" data-view="dashboard">Dashboard</button>
+
+    <h3>Operation</h3>
+    <button class="nav-item" data-view="attack">Attack</button>
+    <button class="nav-item" data-view="monitor">Monitor</button>
+
+    <h3>Post-exploitation</h3>
+    <button class="nav-item" data-view="recon">Recon <span class="count" id="nav-recon">0</span></button>
+    <button class="nav-item" data-view="lateral">Lateral <span class="count" id="nav-owned">0</span></button>
+    <button class="nav-item" data-view="mitm">MITM <span class="count" id="nav-hash">0</span></button>
+    <button class="nav-item" data-view="sessions">Sessions <span class="count" id="nav-sess">0</span></button>
+
+    <h3>Intelligence</h3>
+    <button class="nav-item" data-view="loot">Loot <span class="count" id="nav-loot">0</span></button>
+    <button class="nav-item" data-view="alerts">Alerts <span class="count" id="nav-alerts">0</span></button>
+
+    <h3>System</h3>
+    <button class="nav-item" data-view="settings">Settings</button>
+
+    <div class="side-foot">
+      <div id="side-status">OFFLINE</div>
+      <div class="auth" id="side-token"></div>
+    </div>
+  </aside>
+
+  <main>
+    <div class="topbar">
+      <div class="breadcrumb" id="crumb">DarkSec / <b>Attack</b></div>
+      <div class="badge idle" id="status-badge">IDLE</div>
+      <div class="spacer"></div>
+      <span class="badge" id="see-target">—</span>
+      <button class="btn" id="btn-refresh">REFRESH</button>
+    </div>
+    <div class="accent-strip" aria-hidden="true"></div>
+
+    <div class="content">
+      <!-- ============ DASHBOARD VIEW ============ -->
+      <section id="view-dashboard" style="display:none">
+        <div class="grid3" style="margin-bottom:16px">
+          <div class="panel stat"><div class="v" id="db-engine">—</div><div class="l">Engine</div></div>
+          <div class="panel stat"><div class="v" id="db-ap">—</div><div class="l">Rogue AP</div></div>
+          <div class="panel stat"><div class="v" id="db-mitm">—</div><div class="l">MITM</div></div>
+          <div class="panel stat"><div class="v" id="db-scan">—</div><div class="l">Scan</div></div>
+        </div>
+
+        <div class="grid2" style="margin-bottom:16px">
+          <div class="panel">
+            <h3>Mission status</h3>
+            <div class="set"><div id="db-target" style="font-size:13px;color:var(--text)">No target set</div></div>
+            <div class="set">
+              <button class="btn primary" id="db-go-attack" data-goto="attack">&#9876; OPEN ATTACK</button>
+              <button class="btn" id="db-go-monitor" data-goto="monitor">Monitor live</button>
+            </div>
+          </div>
+
+          <div class="panel">
+            <h3>Tally</h3>
+            <div class="grid4">
+              <div class="panel stat"><div class="v" id="db-clients">0</div><div class="l">Clients</div></div>
+              <div class="panel stat"><div class="v" id="db-creds">0</div><div class="l">Creds</div></div>
+              <div class="panel stat"><div class="v" id="db-hs">0</div><div class="l">Handshakes</div></div>
+              <div class="panel stat"><div class="v" id="db-hash">0</div><div class="l">Hashes</div></div>
+              <div class="panel stat"><div class="v" id="db-owned">0</div><div class="l">Owned</div></div>
+              <div class="panel stat"><div class="v" id="db-beacons">0</div><div class="l">Agents</div></div>
+              <div class="panel stat"><div class="v" id="db-files">0</div><div class="l">Files</div></div>
+              <div class="panel stat"><div class="v" id="db-alerts">0</div><div class="l">Alerts</div></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid2" style="margin-bottom:16px">
+          <div class="panel">
+            <h3>Recent activity</h3>
+            <div id="db-activity" class="dashboard-activity"><div class="empty">No activity yet</div></div>
+          </div>
+
+          <div class="panel">
+            <h3>Quick actions</h3>
+            <div class="set">
+              <button class="btn" data-goto="recon">Recon &amp; agents</button>
+              <button class="btn" data-goto="lateral">Lateral</button>
+              <button class="btn" data-goto="mitm">MITM</button>
+              <button class="btn" data-goto="sessions">Sessions</button>
+              <button class="btn" data-goto="loot">Loot</button>
+              <button class="btn" data-goto="settings">Settings</button>
+            </div>
+
+            <h3 style="margin-top:18px">Tips toolbox — step by step</h3>
+            <div class="tips">
+              <details class="tip" open>
+                <summary>1 · Sign in from any device</summary>
+                <ol>
+                  <li>The password is shown by <code>malstrom passwd</code> (or printed by <code>malstrom start</code>).</li>
+                  <li>Change it anytime: <code>sudo malstrom passwd &lt;new&gt;</code>.</li>
+                  <li>Copy the LAN URL + password from <b>Settings</b> and open it on any device on the network — type the password to enter.</li>
+                  <li>The auth gate can be toggled under <b>Settings → Operator access</b>; it applies live without a restart.</li>
+                </ol>
+              </details>
+
+              <details class="tip">
+                <summary>2 · Load a target and arm your first WiFi attack</summary>
+                <ol>
+                  <li>Open <b>Recon</b> and hit <b>SCAN FOR APs</b>. <b>USE</b> a row, or press <b>PULL FROM RECON</b> on the Attack tab, to load the SSID, BSSID and channel.</li>
+                  <li>Pick a portal mode: <b>Open</b> (fake login) or <b>WPA</b> (evil twin). For WPA set a PSK or leave it blank to auto-generate; tick <b>WPA2/WPA3</b> if the radio supports SAE.</li>
+                  <li>Set <b>Deauth mode</b> — Broadcast, Targeted (recon clients), Adaptive (low-noise) or Off — and <b>WPA capture</b> to handshake, PMKID or both.</li>
+                  <li>Fine-tune the twin with <b>Clone BSSID</b>, <b>BSSID rotate</b>, <b>Hidden SSID</b>, karma and shield toggles, and pick/preview/upload/clone a portal template.</li>
+                  <li>Press <b>ARM ATTACK</b>. The clone goes up, deauth fires and the portal starts serving — watch <b>Monitor</b> for connections and events.</li>
+                </ol>
+              </details>
+
+              <details class="tip">
+                <summary>3 · Catch credentials or handshakes</summary>
+                <ol>
+                  <li>Submitted portal passwords appear immediately under <b>Loot → Credentials</b>.</li>
+                  <li>Handshakes / PMKIDs land under <b>Loot → Handshakes</b>; verified captures auto-crack and the PSK shows under <b>Loot → Cracked</b> (wordlist is set in <b>Settings</b>).</li>
+                  <li>Keep <b>Shield after capture</b> on — clients that already handed over creds stop being deauthed.</li>
+                  <li>Unattended runs: press <b>ARM AUTO HARVEST</b> to scan, deauth, capture and rotate through WPA networks not already in the vault (it yields to manual attacks).</li>
+                </ol>
+              </details>
+
+              <details class="tip">
+                <summary>4 · Read the probe room and adapt the clone</summary>
+                <ol>
+                  <li><b>Monitor → Probe intelligence</b> lists the SSIDs nearby devices are hunting for. Karma listen records them passively; <b>Karma auto-respond</b> even answers the probes.</li>
+                  <li>Press <b>ADOPT</b> on any interest to make that SSID the live clone target instantly.</li>
+                  <li>All probe requests are kept under <b>Loot → Probes</b>.</li>
+                </ol>
+              </details>
+
+              <details class="tip">
+                <summary>5 · Own a host and install your agent</summary>
+                <ol>
+                  <li>Get the victim onto your rogue AP — that is the point of the captive portal.</li>
+                  <li>In <b>Recon</b> run a host scan; the <b>Rogue subnet</b> quick-target locks onto the portal's own /24.</li>
+                  <li>In <b>Sessions</b> arm the <b>Beacon</b>, then copy the sh / ps1 payload and serve it from <code>http://{{gateway}}/beacon</code> (or <code>/beacon.ps1</code>).</li>
+                  <li>Run the agent on the host — it phones home and appears under <b>Sessions</b>. Rotating the agent key in <b>Settings</b> orphans old payloads; serve fresh ones afterwards.</li>
+                </ol>
+              </details>
+
+              <details class="tip">
+                <summary>6 · Command your fleet</summary>
+                <ol>
+                  <li>Pick a session and fire one-off commands from the console, or flip <b>Terminal mode</b> for a rolling per-session stream.</li>
+                  <li>The <b>File browser</b> walks remote directories — click to drill in and <b>GRAB</b> any file into <b>Loot → Files</b> (grabs are not capped like command output).</li>
+                  <li>Arm a <b>reverse pivot</b> like <code>8080-192.168.1.50:80</code> to reach deeper networks from the victim's position.</li>
+                </ol>
+              </details>
+
+              <details class="tip">
+                <summary>7 · Move laterally and dump credentials</summary>
+                <ol>
+                  <li>From a completed scan press <b>SEND HOSTS → LATERAL</b> to fill the target list (or type a CIDR / IPs yourself).</li>
+                  <li>Pick protocols (<b>SMB / SSH / RDP / WinRM</b>) and an attempt limit, then spray with harvested portal creds or a manual pair.</li>
+                  <li>Validated logins show under <b>Owned hosts</b> — run a <b>SAM</b> or <b>LSA</b> dump to pull NT hashes into the vault (hashcat <code>-m 1000</code>).</li>
+                  <li>Respect the limit — spray bursts trigger alerts.</li>
+                </ol>
+              </details>
+
+              <details class="tip">
+                <summary>8 · Poison, strip and crack</summary>
+                <ol>
+                  <li>With the chain armed (portal subnet up), hit <b>ARM POISONING</b> — Responder runs on the rogue interface.</li>
+                  <li>Missed DNS names hand over NetNTLMv2 challenges → <b>Loot → Files</b> as <code>hashes.txt</code>; smash <b>CRACK HASHES</b> to feed them to hashcat.</li>
+                  <li>The <b>HTTP relay / SSL-strip</b> toggle downgrades https links for victims already on the portal mid-attack.</li>
+                  <li>Disarm poisoning before cleanup to release the interface cleanly.</li>
+                </ol>
+              </details>
+
+              <details class="tip">
+                <summary>9 · Collect and export loot</summary>
+                <ol>
+                  <li><b>Loot</b> groups everything: creds, devices, handshakes, cracked PSKs, probes, files.</li>
+                  <li><b>EXPORT CSV</b> pulls the current tab; <b>JSON</b> dumps the creds. Download pcaps (22000), hashes and grabbed files directly.</li>
+                  <li>Pin anything so it survives <b>CLEAR LOOT</b>; each reset in <b>Settings → Danger zone</b> spells out exactly what it keeps.</li>
+                </ol>
+              </details>
+
+              <details class="tip">
+                <summary>10 · Watch, disarm and clean up</summary>
+                <ol>
+                  <li>Every post-exploitation engine (scan, spray, MITM, agents) is <b>operator-armed only</b> — it runs when you press the button, nothing more.</li>
+                  <li>The <b>Alerts</b> tab collects the red-flag events; watch the sidebar counter.</li>
+                  <li><b>DISARM</b> stops the kill chain; <b>FULL CLEANUP</b> restores your original network config. Stop beacons from <b>Sessions</b>; the kill switch survives a reboot.</li>
+                  <li>Unshield a client from <b>Monitor</b>, or clear the whole whitelist, to serve the portal to that host again.</li>
+                </ol>
+              </details>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ ATTACK VIEW ============ -->
+      <section id="view-attack">
+        <div class="grid3" style="margin-bottom:16px">
+          <div class="panel stat"><div class="v" id="st-clients">0</div><div class="l">Clients</div></div>
+          <div class="panel stat"><div class="v" id="st-creds">0</div><div class="l">Credentials</div></div>
+          <div class="panel stat"><div class="v" id="st-deauth">0</div><div class="l">Deauth burst</div></div>
+          <div class="panel stat"><div class="v" id="st-mode">IDLE</div><div class="l">Chain status</div></div>
+        </div>
+
+        <div class="grid2">
+          <div class="panel">
+            <h3>Target selection</h3>
+            <div class="set">
+              <label class="f">SSID</label>
+              <input id="cfg-ssid" type="text" placeholder="Target network name">
+            </div>
+            <div class="set">
+              <label class="f">BSSID (optional)</label>
+              <input id="cfg-bssid" type="text" placeholder="AA:BB:CC:DD:EE:FF">
+            </div>
+            <div class="set">
+              <label class="f">Channel</label>
+              <input id="cfg-channel" type="number" min="1" max="165" value="6">
+            </div>
+            <div class="set">
+              <label class="switch">
+                <input type="checkbox" id="cfg-clone-bssid">
+                <span class="track"></span>
+                <span class="lbl">Clone target BSSID</span>
+              </label>
+              <div class="hint">Twin advertises the target's exact MAC — harder to tell apart (needs a supporting driver)</div>
+            </div>
+            <div class="set">
+              <label class="f">BSSID rotate (min, 0 = off)</label>
+              <input id="cfg-rotate" type="number" min="0" step="5" value="0">
+              <div class="hint">Decoy mode only: re-randomize the twin's MAC every N minutes while armed (cloning keeps the target MAC fixed)</div>
+            </div>
+            <div class="set">
+              <label class="switch">
+                <input type="checkbox" id="cfg-cloak">
+                <span class="track"></span>
+                <span class="lbl">Hidden SSID (cloak broadcast)</span>
+              </label>
+              <div class="hint">Twin stops broadcasting its name; known clients still join by directed probe</div>
+            </div>
+            <div class="set">
+              <button class="btn" id="btn-scan">&#9853; PULL FROM RECON</button>
+              <span class="hint">Opens Recon and scans — USE a row to load it here</span>
+            </div>
+          </div>
+
+          <div class="panel">
+            <h3>Deploy config</h3>
+            <div class="set">
+              <label class="f">Portal mode</label>
+              <select id="cfg-portal-mode">
+                <option value="open">Open clone (auto-join)</option>
+                <option value="wpa">Evil WPA (password-gated)</option>
+              </select>
+            </div>
+            <div class="set" id="psk-wrap" style="display:none">
+              <label class="f">WPA PSK (blank = random)</label>
+              <input id="cfg-psk" type="text" placeholder="Leave blank to auto-generate">
+            </div>
+            <div class="set" id="wpa3-wrap" style="display:none">
+              <label class="switch">
+                <input type="checkbox" id="cfg-wpa3">
+                <span class="track"></span>
+                <span class="lbl">WPA2/WPA3 transition (SAE)</span>
+              </label>
+              <div class="hint">Twin also accepts WPA3-SAE clients; falls back to WPA2-PSK if the radio refuses SAE</div>
+            </div>
+            <div class="set">
+              <label class="f">Deauth mode</label>
+              <select id="cfg-deauth">
+                <option value="broadcast">Broadcast (FF:FF:FF:FF:FF:FF)</option>
+                <option value="targeted">Targeted (recon clients)</option>
+                <option value="adaptive">Adaptive (low-noise)</option>
+                <option value="off">Off (portal + capture only)</option>
+              </select>
+            </div>
+            <div class="grid2">
+              <div class="set">
+                <label class="f">Burst</label>
+                <input id="cfg-burst" type="number" min="1" value="25">
+              </div>
+              <div class="set">
+                <label class="f">Delay (s)</label>
+                <input id="cfg-delay" type="number" min="0" step="0.5" value="1">
+              </div>
+            </div>
+            <div class="set">
+              <label class="switch">
+                <input type="checkbox" id="cfg-continuous" checked>
+                <span class="track"></span>
+                <span class="lbl">Continuous deauth</span>
+              </label>
+            </div>
+            <div class="set">
+              <label class="f">Portal template</label>
+              <select id="cfg-template"></select>
+              <div class="hint"><button class="btn" id="btn-preview" style="padding:6px 10px;font-size:11px">PREVIEW</button> &nbsp;fallback for unidentified devices</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel" style="margin-top:16px">
+          <h3>Payload</h3>
+          <div class="grid2">
+            <div class="set">
+              <label class="f">WPA capture</label>
+              <select id="cfg-capture">
+                <option value="off">Off</option>
+                <option value="handshake">Handshake (4-way EAPOL)</option>
+                <option value="pmkid">PMKID</option>
+                <option value="both">Handshake + PMKID</option>
+              </select>
+              <div class="hint">Passive sniff on target channel &rarr; loot/pcaps/</div>
+            </div>
+            <div class="set">
+              <label class="f">Template upload</label>
+              <button class="btn" id="btn-upload-tpl" style="padding:8px 14px;font-size:12px">UPLOAD .HTML</button>
+              <input type="file" id="file-tpl" accept=".html,.htm,.txt" style="display:none">
+              <div class="hint">Custom portal, stored locally on-device</div>
+            </div>
+            <div class="set">
+              <label class="f">Clone a live login page</label>
+              <div style="display:flex;gap:6px">
+                <input type="text" id="clone-url" placeholder="https://vpn.legitcorp.com/login" style="flex:1;min-width:0">
+                <button class="btn" id="btn-clone-page" style="padding:8px 14px;font-size:12px">CLONE</button>
+              </div>
+              <div class="hint">Fetches + rewrites the page; assets proxy through the portal</div>
+            </div>
+            <div class="set">
+              <label class="switch">
+                <input type="checkbox" id="cfg-karma" checked>
+                <span class="track"></span>
+                <span class="lbl">Karma probe listen</span>
+              </label>
+              <div class="hint">Record client probe requests (interests) — passive</div>
+            </div>
+            <div class="set">
+              <label class="switch">
+                <input type="checkbox" id="cfg-karma-respond">
+                <span class="track"></span>
+                <span class="lbl">Karma auto-respond</span>
+              </label>
+              <div class="hint">Answer probes with the live twin's identity (transmits — detectable)</div>
+            </div>
+            <div class="set">
+              <label class="switch">
+                <input type="checkbox" id="cfg-relay">
+                <span class="track"></span>
+                <span class="lbl">HTTP relay / SSL-strip</span>
+              </label>
+              <div class="hint">Transparently relay victim HTTP upstream; downgrade https links to http (arm after creds captured)</div>
+            </div>
+            <div class="set">
+              <label class="switch">
+                <input type="checkbox" id="cfg-shield" checked>
+                <span class="track"></span>
+                <span class="lbl">Shield after capture</span>
+              </label>
+              <div class="hint">Stop deauthing MACs whose owner already submitted creds</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel" style="margin-top:16px">
+          <h3>Auto handshake harvest <span class="hint" style="font-weight:normal">— pwnagotchi-style</span></h3>
+          <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap">
+            <button class="btn" id="btn-autopwn">&#8635; ARM AUTO HARVEST</button>
+            <span class="hint" id="autopwn-status">Standby — scans APs, deauths, captures handshakes/PMKIDs, then rotates</span>
+          </div>
+          <div class="hint" style="margin-top:8px">Yields to manual attacks. Skips OPEN/WEP and networks already in the vault.</div>
+        </div>
+
+        <div class="panel" style="margin-top:16px">
+          <h3>Kill chain</h3>
+          <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap">
+            <button class="btn primary" id="btn-start" style="padding:14px 30px">&#9654; ARM ATTACK</button>
+            <button class="btn" id="btn-disarm" disabled style="padding:14px 22px">DISARM</button>
+            <button class="btn danger" id="btn-cleanup" style="padding:14px 22px">&#9889; FULL CLEANUP</button>
+            <span class="hint" id="chain-hint">ARM = clone + deauth. Cleanup restores your original AP config.</span>
+          </div>
+          <div style="margin-top:16px">
+            <div class="kv">
+              <div class="k">Stage 1 — Clone</div><div class="v" id="v-clone">-</div>
+              <div class="k">Stage 2 — Deauth</div><div class="v" id="v-deauth">-</div>
+              <div class="k">Stage 3 — Portal</div><div class="v" id="v-portal">-</div>
+              <div class="k">Stage 4 — Capture</div><div class="v" id="v-capture">-</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ MONITOR VIEW ============ -->
+      <section id="view-monitor" style="display:none">
+        <div class="panel" style="margin-bottom:16px">
+          <h3>Connected clients</h3>
+          <div class="tbl-wrap">
+            <table id="tbl-clients">
+              <thead><tr><th>IP</th><th>MAC</th><th>Hostname</th><th>Status</th></tr></thead>
+              <tbody><tr><td colspan="4" class="empty">No clients on the rogue AP yet</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="panel" style="margin-bottom:16px">
+          <h3>Network events</h3>
+          <div id="log-stream"><div class="empty">Awaiting events…</div></div>
+        </div>
+
+        <div class="grid2">
+          <div class="panel">
+            <h3>Whitelisted clients</h3>
+            <div id="whitelist-box"><div class="empty">None submitted credentials yet</div></div>
+            <div style="margin-top:8px;display:flex;gap:8px">
+              <button class="btn" id="btn-whitelist-clear" style="padding:6px 10px;font-size:11px">CLEAR WHITELIST</button>
+            </div>
+          </div>
+          <div class="panel">
+            <h3>ARP anomaly watch</h3>
+            <div id="arp-box"><div class="empty">No anomalies detected</div></div>
+          </div>
+        </div>
+
+        <div class="panel" style="margin-top:16px">
+          <h3>Probe intelligence (karma)</h3>
+          <div class="hint" style="margin-bottom:10px">
+            SSIDs nearby devices are looking for — passive listen, adopt any interest as the new clone.
+          </div>
+          <div class="tbl-wrap">
+            <table id="tbl-probes">
+              <thead><tr><th>Time</th><th>MAC</th><th>Interested in</th><th></th></tr></thead>
+              <tbody><tr><td colspan="4" class="empty">No probe requests recorded yet</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ RECON VIEW ============ -->
+      <section id="view-recon" style="display:none">
+        <div class="panel">
+          <h3>Wi-Fi recon <span class="hint" style="font-weight:normal">— live 802.11 scan, pick a target for the kill chain</span></h3>
+          <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+            <button class="btn primary" id="btn-wifi-scan">&#9853; SCAN FOR APs</button>
+            <input id="wifi-filter" placeholder="Filter: ssid / bssid / vendor / security" style="max-width:280px">
+            <span class="hint" id="wifi-scan-state">No scan yet</span>
+          </div>
+          <div class="tbl-wrap" style="margin-top:12px">
+            <table id="tbl-wifi">
+              <thead><tr><th>SSID</th><th>BSSID</th><th>Vendor</th><th>Ch</th><th>Band</th><th>Signal</th><th>Security</th><th>Flags</th><th></th></tr></thead>
+              <tbody><tr><td colspan="9" class="empty">Run a scan to list nearby APs</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="panel" style="margin-top:16px">
+          <h3>Host + port discovery</h3>
+          <div class="grid2">
+            <div class="set">
+              <label class="f">Target (CIDR or host)</label>
+              <input id="scan-target" list="scan-hosts-dl" placeholder="e.g. 172.16.52.0/24">
+              <datalist id="scan-hosts-dl"></datalist>
+              <span class="hint">Runs from the Pi — target the rogue subnet or anything the box can reach</span>
+            </div>
+            <div class="set">
+              <label class="f">Scan kind</label>
+              <select id="scan-kind">
+                <option value="ports">Port scan (TCP connect)</option>
+                <option value="svc">Service scan (TCP + versions)</option>
+                <option value="ping">Host discovery (ARP / ping)</option>
+              </select>
+            </div>
+            <div class="set">
+              <label class="f">Ports (port scan)</label>
+              <input id="scan-range" value="1-1000">
+            </div>
+            <div class="set">
+              <label class="f">Quick target</label>
+              <label class="switch">
+                <input type="checkbox" id="scan-rogue">
+                <span class="track"></span>
+                <span class="lbl">Rogue subnet (the portal's own /24)</span>
+              </label>
+              <div class="hint">Locks the target onto the subnet the rogue AP serves — scan the victims already connected</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+            <button class="btn primary" id="btn-scan-run">&#9853; RUN SCAN</button>
+            <span class="hint" id="scan-state">Idle</span>
+            <button class="btn" id="btn-scan-to-spray" style="padding:8px 12px;font-size:12px">SEND HOSTS → LATERAL</button>
+          </div>
+        </div>
+        <div class="panel" style="margin-top:16px">
+          <h3>Cached scans</h3>
+          <div class="tbl-wrap">
+            <table id="tbl-scans">
+              <thead><tr><th>Time</th><th>Kind</th><th>Target</th><th>Status</th><th>Hosts</th></tr></thead>
+              <tbody><tr><td colspan="5" class="empty">No scans yet</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="panel" style="margin-top:16px">
+          <h3>Hosts — last completed scan</h3>
+          <div id="scan-hosts-box"><div class="empty">Run a scan to build the subnet picture</div></div>
+        </div>
+      </section>
+
+      <!-- ============ LATERAL VIEW ============ -->
+      <section id="view-lateral" style="display:none">
+        <div class="panel">
+          <h3>Credential spray <span class="hint" style="font-weight:normal">— netexec, captured creds &rarr; footholds</span></h3>
+          <div class="grid2">
+            <div class="set">
+              <label class="f">Targets (CIDR or space-separated IPs)</label>
+              <input id="spray-targets" placeholder="Fill from recon">
+            </div>
+            <div class="set">
+              <label class="f">Credentials</label>
+              <select id="spray-cred">
+                <option value="captured">Auto — harvested portal creds</option>
+                <option value="manual">Manual user / pass</option>
+              </select>
+            </div>
+            <div class="set" id="spray-manual" style="display:none">
+              <label class="f">Manual pair</label>
+              <div class="grid2">
+                <input id="spray-user" placeholder="username">
+                <input id="spray-pass" placeholder="password">
+              </div>
+            </div>
+            <div class="set">
+              <label class="f">Protocols</label>
+              <div class="chips">
+                <label class="switch"><input type="checkbox" class="spray-proto" value="smb" checked><span class="track"></span><span class="lbl">SMB</span></label>
+                <label class="switch"><input type="checkbox" class="spray-proto" value="ssh"><span class="track"></span><span class="lbl">SSH</span></label>
+                <label class="switch"><input type="checkbox" class="spray-proto" value="rdp"><span class="track"></span><span class="lbl">RDP</span></label>
+                <label class="switch"><input type="checkbox" class="spray-proto" value="winrm"><span class="track"></span><span class="lbl">WinRM</span></label>
+              </div>
+            </div>
+            <div class="set">
+              <label class="f">Attempt limit</label>
+              <input id="spray-limit" type="number" value="15" min="1" max="60">
+            </div>
+          </div>
+          <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+            <button class="btn primary" id="btn-spray-run">&#8635; RUN SPRAY</button>
+            <span class="hint" id="spray-state">Idle (tip: capture creds on the portal first, or arm WPA)</span>
+          </div>
+        </div>
+        <div class="panel" style="margin-top:16px">
+          <h3>Credential dump <span class="hint" style="font-weight:normal">— SAM/LSA secrets from hosts that accepted the spray</span></h3>
+          <div class="set">
+            <label class="f">Dump kind</label>
+            <div class="chips">
+              <label class="switch"><input type="radio" name="dump-kind" value="sam" checked><span class="track"></span><span class="lbl">SAM (local NT hashes)</span></label>
+              <label class="switch"><input type="radio" name="dump-kind" value="lsa"><span class="track"></span><span class="lbl">LSA secrets</span></label>
+            </div>
+            <div class="hint">Uses the Lateral targets + credentials above; hashes land in the vault (hashcat -m 1000)</div>
+          </div>
+          <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+            <button class="btn primary" id="btn-dump-run">&#9935; RUN DUMP</button>
+            <span class="hint" id="dump-state">Idle</span>
+          </div>
+        </div>
+        <div class="panel" style="margin-top:16px">
+          <h3>Owned hosts <span class="hint" style="font-weight:normal">— validated credentials</span></h3>
+          <div class="tbl-wrap">
+            <table id="tbl-owned">
+              <thead><tr><th>Time</th><th>Proto</th><th>Host</th><th>User</th><th>Password</th></tr></thead>
+              <tbody><tr><td colspan="5" class="empty">No validated pairs yet</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ MITM VIEW ============ -->
+      <section id="view-mitm" style="display:none">
+        <div class="panel">
+          <h3>LLMNR / mDNS / NBT-NS poisoning</h3>
+          <div class="hint" style="margin-bottom:12px">
+            Runs Responder across the rogue interface. Windows clients that miss a DNS name
+            will hand over NetNTLMv2 challenges — cracked or relayed later. Hashes land in
+            Loot &rarr; Files as <code>hashes.txt</code> (hashcat format).
+          </div>
+          <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+            <button class="btn primary" id="btn-mitm">ARM POISONING</button>
+            <span class="hint" id="mitm-status">Standby (requires the chain to be armed — portal subnet up)</span>
+          </div>
+        </div>
+        <div class="panel" style="margin-top:16px">
+          <h3>Captured NetNTLMv2 hashes</h3>
+          <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:10px">
+            <button class="btn" id="btn-crack-run">&#9935; CRACK HASHES</button>
+            <span class="hint" id="crack-state">hashcat against the vault (NTLMv2 + NT) using the crack wordlist</span>
+          </div>
+          <div class="tbl-wrap">
+            <table id="tbl-hashes">
+              <thead><tr><th>Time</th><th>User</th><th>Hash</th><th>Recovered</th></tr></thead>
+              <tbody><tr><td colspan="4" class="empty">No hashes captured yet</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="panel" style="margin-top:16px">
+          <h3>Responder stream</h3>
+          <pre id="mitm-log" class="mblock"><div class="empty">Not running</div></pre>
+        </div>
+      </section>
+
+      <!-- ============ SESSIONS VIEW ============ -->
+      <section id="view-sessions" style="display:none">
+        <div class="panel">
+          <h3>Beacon arm switch</h3>
+          <div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap">
+            <label class="switch">
+              <input type="checkbox" id="cfg-beacon">
+              <span class="track"></span>
+              <span class="lbl">Beacon listening</span>
+            </label>
+            <span class="hint" id="beacon-status">Off — agents will phone home but receive nothing</span>
+          </div>
+          <div id="beacon-payloads" style="display:none;margin-top:12px">
+            <div class="hint" style="margin-bottom:8px">
+              Serve the payload from the portal at <code>http://{{gateway}}/beacon</code> (sh) or
+              <code>/beacon.ps1</code> (Windows) — or copy it below and deliver out-of-band.
+            </div>
+            <button class="btn" id="btn-copy-sh" style="padding:8px 14px;font-size:12px">COPY BASH AGENT</button>
+            <button class="btn" id="btn-copy-ps1" style="padding:8px 14px;font-size:12px">COPY POWERSHELL AGENT</button>
+            <button class="btn" id="btn-dl-sh" style="padding:8px 14px;font-size:12px">DOWNLOAD SH</button>
+            <button class="btn" id="btn-dl-ps1" style="padding:8px 14px;font-size:12px">DOWNLOAD PS1</button>
+          </div>
+        </div>
+        <div class="panel" style="margin-top:16px">
+          <h3>Sessions</h3>
+          <div class="tbl-wrap">
+            <table id="tbl-sessions">
+              <thead><tr><th>ID</th><th>IP</th><th>Host</th><th>OS</th><th>User</th><th>State</th><th>Last seen</th><th>Tasks</th><th></th></tr></thead>
+              <tbody><tr><td colspan="9" class="empty">No sessions yet</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="panel" style="margin-top:16px">
+          <h3>Command console</h3>
+          <div class="grid2">
+            <div class="set">
+              <label class="f">Session</label>
+              <select id="sess-select"></select>
+            </div>
+            <div class="set">
+              <label class="f">Command</label>
+              <input id="sess-cmd" placeholder="whoami && ipconfig /all">
+            </div>
+          </div>
+          <button class="btn primary" id="btn-sess-cmd" style="margin-top:8px">SEND COMMAND</button>
+          <div class="grid2" style="margin-top:14px">
+            <div class="set">
+              <label class="f">Grab file from session</label>
+              <input id="sess-file" placeholder="/etc/passwd or C:\Users\me\Desktop\notes.txt">
+              <div class="hint">Base64'd back to the operator, decoded and saved into Loot &rarr; Files. Not capped by the output limit.</div>
+            </div>
+          </div>
+          <button class="btn" id="btn-sess-file" style="margin-top:8px">GRAB FILE</button>
+        </div>
+        <div class="panel" style="margin-top:16px">
+          <h3>Remote terminal <span class="hint" id="sess-term-state"></span></h3>
+          <label class="switch" style="margin-bottom:10px">
+            <input type="checkbox" id="cfg-term">
+            <span class="track"></span>
+            <span class="lbl">Terminal mode</span>
+          </label>
+          <div style="display:flex;gap:6px">
+            <input type="text" id="sess-term-cmd" placeholder="ls -la /home/ && whoami" style="flex:1;min-width:0">
+            <button class="btn" id="btn-sess-term-cmd" style="padding:8px 14px;font-size:12px">RUN</button>
+          </div>
+          <div class="hint" style="margin-top:6px">Output streams into a rolling per-session buffer — command I/O without touching the output history</div>
+          <pre id="sess-term" class="mblock"></pre>
+        </div>
+        <div class="panel" style="margin-top:16px">
+          <h3>File browser</h3>
+          <div style="display:flex;gap:6px">
+            <input type="text" id="sess-ls-path" placeholder="/etc or /home/user" style="flex:1;min-width:0">
+            <button class="btn" id="btn-sess-ls" style="padding:8px 14px;font-size:12px">LIST</button>
+          </div>
+          <div class="hint" style="margin-top:6px">Directory listing returns formatted; click GRAB to pull a file into Loot &rarr; Files</div>
+          <div id="sess-ls"></div>
+        </div>
+        <div class="panel" style="margin-top:16px">
+          <h3>Reverse pivot (port-forward)</h3>
+          <div style="display:flex;gap:6px">
+            <input type="text" id="sess-fw" placeholder="8080-192.168.1.50:80" style="flex:1;min-width:0">
+            <button class="btn" id="btn-sess-fw" style="padding:8px 14px;font-size:12px">ARM</button>
+          </div>
+          <div class="hint" style="margin-top:6px">Opens <code>127.0.0.1:&lt;lport&gt;</code> on the victim and pipes it to <code>&lt;host&gt;:&lt;port&gt;</code> from the victim's position (via socat/nc) — reach the target network through the session</div>
+          <div id="sess-fw-list"></div>
+        </div>
+        <div class="panel" style="margin-top:16px">
+          <h3>Session outputs</h3>
+          <div id="sess-out"><div class="empty">Nothing returned yet</div></div>
+        </div>
+      </section>
+
+      <!-- ============ SETTINGS VIEW ============ -->
+      <section id="view-settings" style="display:none">
+        <div class="grid2">
+          <div class="panel">
+            <h3>Operator access</h3>
+            <div class="hint" style="margin-bottom:8px">
+              Sign in from another device on the network — open the URL below and enter the password.
+            </div>
+            <div class="set">
+              <label class="f">Dashboard URL (LAN)</label>
+              <input id="set-lan-url" readonly>
+            </div>
+            <div class="set">
+              <label class="f">Dashboard password</label>
+              <div style="display:flex;gap:8px">
+                <input id="set-token" class="mono" readonly>
+                <button class="btn" id="btn-copy-token">COPY</button>
+              </div>
+            </div>
+            <div class="set" style="margin-top:4px">
+              <label class="switch">
+                <input type="checkbox" id="set-auth-gate">
+                <span class="track"></span>
+                <span class="lbl">Authentication gate</span>
+              </label>
+              <div class="hint" id="set-auth-hint">Token-gated sign-in on the dashboard (applies without restart)</div>
+            </div>
+            <div class="hint" style="margin-top:6px">
+              Set or change anytime with <code>sudo malstrom passwd &lt;new&gt;</code> — stored at
+              <code>/var/lib/malstrom/token</code>.
+            </div>
+          </div>
+          <div class="panel">
+            <h3>Agent key</h3>
+            <div class="hint" style="margin-bottom:8px">
+              Required by sh / PowerShell agents to register. Rotating orphans agents that
+              still hold the old key — serve fresh payloads afterwards.
+            </div>
+            <div class="set">
+              <label class="f">Beacon key</label>
+              <input id="set-key" class="mono" readonly>
+            </div>
+            <button class="btn" id="btn-rotate-key" style="margin-top:8px">ROTATE KEY</button>
+            <span class="hint" id="set-key-msg"></span>
+          </div>
+        </div>
+
+        <div class="panel" style="margin-top:16px">
+          <h3>Engine settings</h3>
+          <div class="grid2">
+            <div class="set">
+              <label class="f">Beacon poll interval (s)</label>
+              <input id="set-beacon-int" type="number" min="1" max="3600">
+            </div>
+            <div class="set">
+              <label class="f">Beacon output cap (bytes)</label>
+              <input id="set-beacon-maxout" type="number" min="4096" max="16777216">
+              <div class="hint">Per command: command output is truncated here. File grabs are not capped.</div>
+            </div>
+            <div class="set">
+              <label class="f">Scan default port range</label>
+              <input id="set-scan-range" placeholder="1-1000">
+            </div>
+            <div class="set">
+              <label class="f">Cred spray limit (max attempts)</label>
+              <input id="set-spray-limit" type="number" min="1" max="100">
+            </div>
+            <div class="set">
+              <label class="f">Crack wordlist (auto-crack + hash runs)</label>
+              <input id="set-crack-wordlist" placeholder="blank = auto-detect (rockyou etc.)">
+              <div class="hint">Path used by the handshake auto-crack and the dashboard hash crack</div>
+            </div>
+            <div class="set">
+              <label class="f">MITM interface</label>
+              <input id="set-mitm-iface" placeholder="e.g. wlan0 / eth0">
+            </div>
+            <div class="set">
+              <label class="f">Wi-Fi adapter (rogue AP + monitor)</label>
+              <input id="set-wlan-dev" placeholder="auto — first free wlan (e.g. wlan1)">
+            </div>
+            <div class="set">
+              <label class="f">Portal broadcast SSID</label>
+              <input id="set-portal-ssid" placeholder="blank = follow Attack target SSID">
+              <div class="hint">Overrides the SSID the rogue AP broadcasts. Blank to clone the Attack tab target. Applies live while armed.</div>
+            </div>
+          </div>
+          <div style="margin-top:12px">
+            <button class="btn primary" id="btn-save-settings">SAVE SETTINGS</button>
+            <span class="hint" id="set-save-msg" style="margin-left:10px"></span>
+          </div>
+        </div>
+
+        <div class="panel" style="margin-top:16px">
+          <h3>Danger zone</h3>
+          <div class="hint" style="margin-bottom:8px">
+            <b>RESET TO STOCK</b> clears all operational data (scans, loot, target
+            state) but keeps your portal templates, whitelist, settings, pinned
+            items and auth.<br>
+            <b>RESET TOOL</b> is a factory reset that wipes loot, target state,
+            whitelist, custom templates and settings, and rotates the beacon key —
+            the dashboard password is kept.<br>
+            Use <b>CLEAR LOOT</b> in the Loot tab to wipe only the harvested data.
+          </div>
+          <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+            <button class="btn" id="btn-reset-stock" style="padding:12px 24px">RESET TO STOCK</button>
+            <button class="btn danger" id="btn-reset-tool" style="padding:12px 24px">RESET TOOL</button>
+            <span class="hint" id="reset-msg"></span>
+          </div>
+        </div>
+
+        <div class="panel" style="margin-top:16px">
+          <h3>Runtime</h3>
+          <div class="tbl-wrap">
+            <table id="tbl-runtime">
+              <thead><tr><th>Key</th><th>Value</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ LOOT VIEW ============ -->
+      <section id="view-loot" style="display:none">
+        <div class="panel">
+          <h3>Loot vault <span class="hint" style="font-weight:normal">— on-device only, mirrored to ~/loot/malstrom/</span></h3>
+          <div class="loot-bar">
+            <div class="loot-tabs">
+              <button class="tab active" data-tab="creds">Credentials <span class="count" id="lc-creds"></span></button>
+              <button class="tab" data-tab="devices">Devices <span class="count" id="lc-devices"></span></button>
+              <button class="tab" data-tab="handshakes">Handshakes <span class="count" id="lc-hs"></span></button>
+              <button class="tab" data-tab="cracked">Cracked <span class="count" id="lc-cracked"></span></button>
+              <button class="tab" data-tab="probes">Probes <span class="count" id="lc-probes"></span></button>
+              <button class="tab" data-tab="files">Files</button>
+            </div>
+            <div class="loot-exports">
+              <button class="btn" id="btn-export-csv" style="padding:8px 12px;font-size:12px">EXPORT CSV</button>
+              <button class="btn" id="btn-export-json" style="padding:8px 12px;font-size:12px">JSON</button>
+              <button class="btn danger" id="btn-loot-clear" style="padding:8px 12px;font-size:12px">CLEAR LOOT</button>
+            </div>
+          </div>
+
+          <div class="tbl-wrap">
+            <table class="cred-table" id="table-creds">
+              <thead><tr><th></th><th>Time</th><th>Device</th><th>Username</th><th>Password</th><th>IP</th><th>MAC</th></tr></thead>
+              <tbody><tr><td colspan="7" class="empty">No credentials captured yet</td></tr></tbody>
+            </table>
+          </div>
+
+          <div class="tbl-wrap" style="display:none">
+            <table class="cred-table" id="table-devices">
+              <thead><tr><th></th><th>Last seen</th><th>MAC</th><th>OS</th><th>Hostname</th><th>IPs</th><th>Creds</th></tr></thead>
+              <tbody><tr><td colspan="7" class="empty">No device fingerprints yet</td></tr></tbody>
+            </table>
+          </div>
+
+          <div class="tbl-wrap" style="display:none">
+            <table class="cred-table" id="table-handshakes">
+              <thead><tr><th>Time</th><th>BSSID</th><th>SSID</th><th>Client</th><th>Type</th><th>Valid</th><th>Pcap</th><th>PSK</th></tr></thead>
+              <tbody><tr><td colspan="8" class="empty">No handshake / PMKID captures yet</td></tr></tbody>
+            </table>
+          </div>
+
+          <div class="tbl-wrap" style="display:none">
+            <table class="cred-table" id="table-cracked">
+              <thead><tr><th>Time</th><th>SSID</th><th>BSSID</th><th>Password</th><th>Source</th></tr></thead>
+              <tbody><tr><td colspan="5" class="empty">Nothing cracked yet — auto-crack runs when a verified capture lands</td></tr></tbody>
+            </table>
+          </div>
+
+          <div class="tbl-wrap" style="display:none">
+            <table class="cred-table" id="table-probes">
+              <thead><tr><th>Time</th><th>MAC</th><th>SSID</th></tr></thead>
+              <tbody><tr><td colspan="3" class="empty">No probe requests yet</td></tr></tbody>
+            </table>
+          </div>
+
+          <div id="loot-files" style="display:none">
+            <div class="empty">No files in the loot tree yet</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ ALERTS VIEW ============ -->
+      <section id="view-alerts" style="display:none">
+        <div class="panel">
+          <h3>Alert queue</h3>
+          <div id="alert-box"><div class="empty">No alerts</div></div>
+        </div>
+      </section>
+    </div>
+  </main>
+</div>
+
+<div class="modal-backdrop" id="modal">
+  <div class="modal">
+    <div class="head"><b>PORTAL PREVIEW</b><button class="x" id="modal-close">&times;</button></div>
+    <div class="modal-body"><iframe id="modal-iframe" srcdoc=""></iframe></div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script src="js/app.js"></script>
+</body>
+</html>
