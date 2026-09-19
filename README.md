@@ -1,5 +1,6 @@
 # malstrom
 MALSTROM — an all-in-one WiFi attack &amp; post-exploitation platform for Linux. Automates rogue access points, evil twin portals, deauth/disassociation, KARMA, MITM, recon, scanning and lateral movement with a real-time operator dashboard, credential capture, exfil and Lua-style modules for automation.
+<img width="1376" height="768" alt="image" src="https://github.com/user-attachments/assets/0a888476-03df-4973-9b29-517139c3ba60" />
 
 <div align="center">
 
