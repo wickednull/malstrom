@@ -9,6 +9,7 @@
 ![License](https://img.shields.io/badge/license-Authorized--Use--Only-red.svg?style=for-the-badge)
 ![Platform](https://img.shields.io/badge/platform-Linux-FCC624.svg?style=for-the-badge&logo=linux&logoColor=black)
 ![Status](https://img.shields.io/badge/build-passing-brightgreen.svg?style=for-the-badge)
+<img width="1376" height="768" alt="image" src="https://github.com/user-attachments/assets/9ef73d1d-7581-480d-8239-91e1f0cb61fd" />
 
 <br />
 
