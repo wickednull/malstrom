@@ -46,10 +46,10 @@ The rogue AP runs on a virtual interface (`ap0`) carved from a spare radio to pr
 ```text
 ┌─────────────────────────────────────────────────────────────────────────┐
 │ DARKSEC MALSTROM v2.4                                                   │
-│ [http://127.0.0.1:8888](http://127.0.0.1:8888)                                                   │
+│ [http://127.0.0.1:8888](http://127.0.0.1:8888)                          │
 ├─────────────────────────────────────────────────────────────────────────┤
 │ INTERFACE  │ wlan1mon (Radio 1) | AP IFACE │ ap0 (Radio 2)              │
-│ TARGET     │ 00:11:22:33:44:55 (Target_SSID) | CH 6                       │
+│ TARGET     │ 00:11:22:33:44:55 (Target_SSID) | CH 6                     │
 ├─────────────────────────────────────────────────────────────────────────┤
 │ AUDITING & ATTACK MODULES                                               │
 │ [x] Deauth (Aireplay/Raw)   [x] Captive Portal         [ ] Karma Listen │
