@@ -1,34 +1,19 @@
-<p align="center">
-<img width="100%" alt="DarkSec Malstrom Operator Dashboard" src="[https://github.com/user-attachments/assets/0a888476-03df-4973-9b29-517139c3ba60](https://github.com/user-attachments/assets/0a888476-03df-4973-9b29-517139c3ba60)" />
-</p>
-<p align="center">
-<a href="[https://github.com/wickednull/malstrom/blob/main/LICENSE](https://github.com/wickednull/malstrom/blob/main/LICENSE)"><img src="[https://img.shields.io/badge/License-Authorized--Use--Only-red.svg](https://img.shields.io/badge/License-Authorized--Use--Only-red.svg)" alt="License"></a>
-<img src="[https://img.shields.io/badge/version-2.4-blue](https://img.shields.io/badge/version-2.4-blue)" alt="Version">
-<img src="[https://img.shields.io/badge/Platform-Linux-orange](https://img.shields.io/badge/Platform-Linux-orange)" alt="Platform">
-<img src="[https://img.shields.io/badge/Language-Python%20%7C%20Bash-green](https://img.shields.io/badge/Language-Python%20%7C%20Bash-green)" alt="Language">
-<img src="[https://img.shields.io/badge/Category-Security-red](https://img.shields.io/badge/Category-Security-red)" alt="Category">
-<img src="[https://img.shields.io/github/last-commit/wickednull/malstrom](https://img.shields.io/github/last-commit/wickednull/malstrom)" alt="Last Commit">
-<img src="[https://img.shields.io/github/stars/wickednull/malstrom?style=social](https://img.shields.io/github/stars/wickednull/malstrom?style=social)" alt="Stars">
-</p>
-<h3 align="center">⚡ All-in-One WiFi Attack & Post-Exploitation Framework for Linux</h3>
-<p align="center">
+
+⚡ All-in-One WiFi Attack & Post-Exploitation Framework for Linux
 MALSTROM automates rogue access point deployment, evil twin portals, deauth/disassociation attacks, KARMA spoofing, MITM poisoning, recon scanning, and lateral movement from a unified real-time dashboard.
-</p>
 📊 Project Stats
-| Metric | Value |
-|---|---|
-| Attack Types | Rogue AP, Evil Twin, Deauth (Raw/Aireplay), Karma, MITM Poisoning |
-| Post-Exploitation | Lateral Movement (NetExec), Responder, POSIX/PS Beacons |
-| Interface | Real-time Web Dashboard (SSE Stream) bound to 127.0.0.1:8888 |
-| Architecture | Native Python Orchestrator with OS-level virtual interfaces (ap0) |
-| Target OS | Linux (Kernel 5.x+) |
-| Dependencies | python3, hostapd, dnsmasq, iptables, iw, aireplay-ng, tcpdump, nmap, netexec, responder |
+ * Attack Types: Rogue AP, Evil Twin, Deauth (Raw/Aireplay), Karma, MITM Poisoning
+ * Post-Exploitation: Lateral Movement (NetExec), Responder, POSIX/PS Beacons
+ * Interface: Real-time Web Dashboard (SSE Stream) bound to 127.0.0.1:8888
+ * Architecture: Native Python Orchestrator with OS-level virtual interfaces (ap0)
+ * Target OS: Linux (Kernel 5.x+)
+ * Dependencies: python3, hostapd, dnsmasq, iptables, iw, aireplay-ng, tcpdump, nmap, netexec, responder
 📖 Description
-DarkSec MALSTROM automates the end-to-end WiFi attack vector from a single process. It handles target SSID cloning, frame injection, and OS-adaptive captive portal deployment while driving an interactive web dashboard bound to [http://127.0.0.1:8888](http://127.0.0.1:8888).
+DarkSec MALSTROM automates the end-to-end WiFi attack vector from a single process. It handles target SSID cloning, frame injection, and OS-adaptive captive portal deployment while driving an interactive web dashboard bound to 127.0.0.1:8888.
 The rogue AP runs on a virtual interface (ap0) carved from a spare radio to preserve active upstream management connections.
 ┌─────────────────────────────────────────────────────────────────────────┐
 │ DARKSEC MALSTROM v2.4                                                   │
-│ http://127.0.0.1:8888                                                   │
+│ [http://127.0.0.1:8888](http://127.0.0.1:8888)                                                   │
 ├─────────────────────────────────────────────────────────────────────────┤
 │ INTERFACE  │ wlan1mon (Radio 1) | AP IFACE │ ap0 (Radio 2)              │
 │ TARGET     │ 00:11:22:33:44:55 (Target_SSID) | CH 6                       │
@@ -54,9 +39,8 @@ The rogue AP runs on a virtual interface (ap0) carved from a spare radio to pres
 🛠️ Requirements
  * Hardware: Minimum 2 WiFi interfaces (1 supporting monitor mode/injection + 1 supporting AP mode).
  * OS: Linux (Kernel 5.x or newer with root privileges).
- * Dependencies:
-   * Core Binaries: bash, python3 (3.9+), hostapd, dnsmasq, iptables, iw, aireplay-ng, tcpdump
-   * Post-Ex Binaries: nmap, netexec, responder
+ * Core Binaries: bash, python3 (3.9+), hostapd, dnsmasq, iptables, iw, aireplay-ng, tcpdump
+ * Post-Ex Binaries: nmap, netexec, responder
 📋 Table of Contents
  * Installation
  * Usage
@@ -69,14 +53,12 @@ The rogue AP runs on a virtual interface (ap0) carved from a spare radio to pres
  * Disclaimer
  * License
 ⚙️ Installation
-🚀 One-Line Quick Install
-Run the quick setup script to install all required dependencies, clone the repository, and register system symlinks:
-curl -sSL https://raw.githubusercontent.com/wickednull/malstrom/main/install.sh | sudo bash
+Quick Install
+curl -sSL [https://raw.githubusercontent.com/wickednull/malstrom/main/install.sh](https://raw.githubusercontent.com/wickednull/malstrom/main/install.sh) | sudo bash
 
-🔧 Manual Installation
-If preferred, clone the repository and run setup manually:
+Manual Installation
 # 1. Clone the repository
-git clone https://github.com/wickednull/malstrom.git
+git clone [https://github.com/wickednull/malstrom.git](https://github.com/wickednull/malstrom.git)
 cd malstrom
 
 # 2. Make binaries executable
@@ -91,7 +73,6 @@ sudo apt update && sudo apt install -y \
 sudo ./bin/malstrom --check
 
 💻 Usage
-Launch MALSTROM directly using the CLI management binary:
 # Full stack execution (Engine + Captive Portal + Web Dashboard)
 sudo malstrom
 
@@ -101,7 +82,7 @@ sudo malstrom --open
 # Launch without token gate enforcement on localhost
 sudo malstrom --no-auth
 
-🕹️ CLI Service Commands
+CLI Service Commands
 sudo malstrom start       # Start background daemon & display access details
 sudo malstrom launch      # Start daemon if needed and launch signed-in UI
 malstrom open             # Open dashboard with auto-filled access token
@@ -121,17 +102,15 @@ malstrom token            # Print current operator access token
 | Settings | Manage LAN binding, access tokens, beacon key rotation, and factory resets. |
 ⚙️ Post-Exploitation Modules
 1. Recon & Mapping
-Executes network sweeps across target subnets (including rogue 172.16.52.0/24 or accessible LAN CIDRs). Results feed directly into the credential spray engine.
-# Executed via Web Dashboard or CLI Orchestrator
+Executes network sweeps across target subnets (including rogue 172.16.52.0/24 or accessible LAN CIDRs).
 malstrom recon scan --target 172.16.52.0/24
 
 2. Lateral Movement (Credential Spray)
-Runs netexec against target hosts using harvested credentials across supported protocols:
+Runs netexec against target hosts using harvested credentials:
 netexec <protocol> <target_cidr> -u <user> -p <pass>
 
-Successful authentication vectors are flagged with [+] OWNED alerts and committed to owned.json.
 3. MITM & Poisoning
-Spawns Responder on the rogue AP interface to intercept broadcast name resolution requests (LLMNR/mDNS/NBT-NS). Captured NetNTLMv2 hashes are formatted for hashcat and indexed directly into the Loot vault.
+Spawns Responder on the rogue AP interface to intercept broadcast name resolution requests (LLMNR/mDNS/NBT-NS).
 4. Beacon Sessions
 Generates light footprint agent scripts for target command execution:
 # POSIX Shell Target
@@ -155,7 +134,7 @@ Deauth Operating Modes
 | adaptive | Operates silently, triggering targeted deauth bursts only when client traffic is observed. |
 | off | Disables frame injection; keeps passive capture and evil-twin portals active. |
 📝 Loot Storage & Maintenance
-Harvested data is stored locally in ~/loot/malstrom/ (or /var/lib/malstrom when executed as a system service):
+Harvested data is stored locally in ~/loot/malstrom/:
 ~/loot/malstrom/
 ├── creds.json          # Harvested portal credentials
 ├── devices.json        # Client fingerprints (MAC, Hostname, OS, User-Agent)
@@ -193,7 +172,7 @@ MALSTROM/
 
 🤝 Contributing
 Contributions are welcome!
- * Fork the repository ([https://github.com/wickednull/malstrom/fork](https://github.com/wickednull/malstrom/fork)).
+ * Fork the repository (https://github.com/wickednull/malstrom/fork).
  * Create your feature branch (git checkout -b feature/amazing-feature).
  * Commit your changes (git commit -m 'Add amazing feature').
  * Push to the branch (git push origin feature/amazing-feature).
@@ -202,11 +181,5 @@ Contributions are welcome!
 Use at your own risk. The authors assume no liability for misuse or damage caused by this tool. MALSTROM is provided as-is for security research and authorized testing only. Always obtain proper written permission before testing on any network or device.
 📄 License
 Distributed under the MIT License. See LICENSE for details.
-<p align="center">
-<b>Project Link:</b> <a href="[https://github.com/wickednull/malstrom](https://github.com/wickednull/malstrom)">github.com/wickednull/malstrom</a>
-
-<b>Author:</b> wickednull | <b>Organization:</b> DarkSec
-
-
-<i>Happy (ethical) hacking! 🏴‍☠️</i>
-</p>
+Project Link: github.com/wickednull/malstrom
+Author: wickednull | Organization: DarkSec
