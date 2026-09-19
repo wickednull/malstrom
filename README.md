@@ -1,26 +1,52 @@
-<div align="center">
-<img width="1376" alt="DarkSec Malstrom Operator Dashboard" src="https://github.com/user-attachments/assets/0a888476-03df-4973-9b29-517139c3ba60" />
-<!-- Static Badges -->
+# MALSTROM
 
-<!-- Dynamic GitHub Badges -->
-⚡ All-in-One WiFi Attack & Post-Exploitation Framework for Linux
+![MALSTROM Header](https://capsule-render.vercel.app/api?type=waving&color=0:00d2ff,100:3a7bd5&height=200&section=header&text=MALSTROM&fontSize=80&fontColor=ffffff&animation=fadeIn&fontAlignY=38)
+
+<p align="center">
+  <img width="100%" alt="DarkSec Malstrom Operator Dashboard" src="https://github.com/user-attachments/assets/0a888476-03df-4973-9b29-517139c3ba60" />
+</p>
+
+<p align="center">
+  <a href="https://github.com/wickednull/malstrom/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-Authorized--Use--Only-red.svg" alt="License"></a>
+  <img src="https://img.shields.io/badge/version-2.4-blue" alt="Version">
+  <img src="https://img.shields.io/badge/Platform-Linux-orange" alt="Platform">
+  <img src="https://img.shields.io/badge/Language-Python%20%7C%20Bash-green" alt="Language">
+  <img src="https://img.shields.io/badge/Category-Security-red" alt="Category">
+  <img src="https://img.shields.io/github/last-commit/wickednull/malstrom" alt="Last Commit">
+  <img src="https://img.shields.io/github/stars/wickednull/malstrom?style=social" alt="Stars">
+</p>
+
+<h3 align="center">⚡ All-in-One WiFi Attack & Post-Exploitation Framework for Linux</h3>
+
+<p align="center">
 MALSTROM automates rogue access point deployment, evil twin portals, deauth/disassociation attacks, KARMA spoofing, MITM poisoning, recon scanning, and lateral movement from a unified real-time dashboard.
-</div>
-📊 Project Stats
+</p>
+
+---
+
+## 📊 Project Stats
+
 | Metric | Value |
-|---|---|
-| Attack Types | Rogue AP, Evil Twin, Deauth (Raw/Aireplay), Karma, MITM Poisoning |
-| Post-Exploitation | Lateral Movement (NetExec), Responder, POSIX/PS Beacons |
-| Interface | Real-time Web Dashboard (SSE Stream) bound to 127.0.0.1:8888 |
-| Architecture | Native Python Orchestrator with OS-level virtual interfaces (ap0) |
-| Target OS | Linux (Kernel 5.x+) |
-| Dependencies | python3, hostapd, dnsmasq, iptables, iw, aireplay-ng, tcpdump, nmap, netexec, responder |
-📖 Description
-DarkSec MALSTROM automates the end-to-end WiFi attack vector from a single process. It handles target SSID cloning, frame injection, and OS-adaptive captive portal deployment while driving an interactive web dashboard bound to [http://127.0.0.1:8888](http://127.0.0.1:8888).
-The rogue AP runs on a virtual interface (ap0) carved from a spare radio to preserve active upstream management connections.
+| :--- | :--- |
+| **Attack Types** | Rogue AP, Evil Twin, Deauth (Raw/Aireplay), Karma, MITM Poisoning |
+| **Post-Exploitation** | Lateral Movement (NetExec), Responder, POSIX/PS Beacons |
+| **Interface** | Real-time Web Dashboard (SSE Stream) bound to `127.0.0.1:8888` |
+| **Architecture** | Native Python Orchestrator with OS-level virtual interfaces (`ap0`) |
+| **Target OS** | Linux (Kernel 5.x+) |
+| **Dependencies** | `python3`, `hostapd`, `dnsmasq`, `iptables`, `iw`, `aireplay-ng`, `tcpdump`, `nmap`, `netexec`, `responder` |
+
+---
+
+## 📖 Description
+
+**DarkSec MALSTROM** automates the end-to-end WiFi attack vector from a single process. It handles target SSID cloning, frame injection, and OS-adaptive captive portal deployment while driving an interactive web dashboard bound to `http://127.0.0.1:8888`.
+
+The rogue AP runs on a virtual interface (`ap0`) carved from a spare radio to preserve active upstream management connections.
+
+```text
 ┌─────────────────────────────────────────────────────────────────────────┐
 │ DARKSEC MALSTROM v2.4                                                   │
-│ http://127.0.0.1:8888                                                   │
+│ [http://127.0.0.1:8888](http://127.0.0.1:8888)                                                   │
 ├─────────────────────────────────────────────────────────────────────────┤
 │ INTERFACE  │ wlan1mon (Radio 1) | AP IFACE │ ap0 (Radio 2)              │
 │ TARGET     │ 00:11:22:33:44:55 (Target_SSID) | CH 6                       │
@@ -63,12 +89,12 @@ The rogue AP runs on a virtual interface (ap0) carved from a spare radio to pres
 ⚙️ Installation
 🚀 One-Line Quick Install
 Run the quick setup script to install all required dependencies, clone the repository, and register system symlinks:
-curl -sSL https://raw.githubusercontent.com/wickednull/malstrom/main/install.sh | sudo bash
+curl -sSL [https://raw.githubusercontent.com/wickednull/malstrom/main/install.sh](https://raw.githubusercontent.com/wickednull/malstrom/main/install.sh) | sudo bash
 
 🔧 Manual Installation
 If preferred, clone the repository and run setup manually:
 # 1. Clone the repository
-git clone https://github.com/wickednull/malstrom.git
+git clone [https://github.com/wickednull/malstrom.git](https://github.com/wickednull/malstrom.git)
 cd malstrom
 
 # 2. Make binaries executable
@@ -185,7 +211,7 @@ MALSTROM/
 
 🤝 Contributing
 Contributions are welcome!
- * Fork the repository ([https://github.com/wickednull/malstrom/fork](https://github.com/wickednull/malstrom/fork)).
+ * Fork the repository (https://github.com/wickednull/malstrom/fork).
  * Create your feature branch (git checkout -b feature/amazing-feature).
  * Commit your changes (git commit -m 'Add amazing feature').
  * Push to the branch (git push origin feature/amazing-feature).
@@ -194,8 +220,12 @@ Contributions are welcome!
 Use at your own risk. The authors assume no liability for misuse or damage caused by this tool. MALSTROM is provided as-is for security research and authorized testing only. Always obtain proper written permission before testing on any network or device.
 📄 License
 Distributed under the MIT License. See LICENSE for details.
-<div align="center">
-Project Link: github.com/wickednull/malstrom
-Author: wickednull | Organization: DarkSec
-Happy (ethical) hacking! 🏴‍☠️
-</div>
+<p align="center">
+<b>Project Link:</b> <a href="https://github.com/wickednull/malstrom">github.com/wickednull/malstrom</a>
+
+<b>Author:</b> wickednull | <b>Organization:</b> DarkSec
+
+
+<i>Happy (ethical) hacking! 🏴‍☠️</i>
+</p>
+
