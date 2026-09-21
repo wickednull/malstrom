@@ -161,6 +161,8 @@ malstrom token            # Print current operator access token
 | MITM | Responder integration for LLMNR/mDNS/NBT-NS poisoning and NetNTLMv2 hash harvesting. |
 | Sessions | Command-and-control tasking interface for POSIX sh and PowerShell /beacon agents. |
 | Settings | Manage LAN binding, access tokens, beacon key rotation, and factory resets. |
+
+
 ⚙️ Post-Exploitation Modules
 1. Recon & Mapping
 Executes network sweeps across target subnets (including rogue 172.16.52.0/24 or accessible LAN CIDRs). Results feed directly into the credential spray engine.
