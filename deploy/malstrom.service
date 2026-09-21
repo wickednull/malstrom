@@ -1,0 +1,28 @@
+[Unit]
+Description=DarkSec MALSTROM — WiFi attack & post-exploitation platform
+Documentation=file:__MALSTROM_DIR__/README.md
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/malstrom run
+# The operator's /etc/malstrom/env is the source of truth — no Environment=
+# override here, or the unit would silently defeat an env-file STATE_DIR/etc.
+EnvironmentFile=-/etc/malstrom/env
+WorkingDirectory=__MALSTROM_DIR__
+StateDirectory=malstrom
+KillSignal=SIGTERM
+# Graceful teardown must run to completion: the daemon's SIGTERM handler
+# restores the wifi stack (hostapd -> MAC -> vifs -> NetworkManager). A
+# SIGKILL in the middle of that is exactly what leaves a Pi's radio wedged or
+# the host wifi broken. SendSIGKILL=no + a generous TimeoutStopSec lets the
+# cleanup finish; a stuck daemon is then handled by the operator, not a
+# mid-state kill.
+SendSIGKILL=no
+TimeoutStopSec=60
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
