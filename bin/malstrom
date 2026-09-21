@@ -1,0 +1,27 @@
+#!/usr/bin/env python3
+import os
+import sys
+
+# Make foreground/debug runs behave like the installed service: the env file
+# wins, CLI-specified env overrides stay intact (env vars beat file values).
+_env_file = '/etc/malstrom/env'
+if os.path.exists(_env_file):
+    try:
+        with open(_env_file) as _fh:
+            for _line in _fh:
+                _line = _line.strip()
+                if _line and not _line.startswith('#') and '=' in _line:
+                    _k, _v = _line.split('=', 1)
+                    _k = _k.strip()
+                    _v = _v.strip().strip('"').strip("'")
+                    if _k:
+                        os.environ.setdefault(_k, _v)
+    except OSError:
+        pass
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from malstrom.app import main
+
+if __name__ == '__main__':
+    sys.exit(main())
