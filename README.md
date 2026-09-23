@@ -80,54 +80,24 @@ The rogue AP runs on a virtual interface (`ap0`) carved from a spare radio to pr
    * Post-Ex Binaries: nmap, netexec, responder
      
 
-📋 Table of Contents
- * Installation
- * Usage
- * Dashboard Workspaces
- * Post-Exploitation Modules
- * Capture & Deauth Specifications
- * Loot Storage & Maintenance
- * Repository Structure
- * Contributing
- * Disclaimer
- * License
-
-
 ⚙️ Installation
 
-🚀 One-Line Quick Install
 
-Run the quick setup script to install all required dependencies, clone the repository, and register system symlinks:
-
-```text
-curl -sSL [https://raw.githubusercontent.com/wickednull/malstrom/main/install.sh](https://raw.githubusercontent.com/wickednull/malstrom/main/install.sh) | sudo bash
-```
-
-🔧 Manual Installation
-If preferred, clone the repository and run setup manually:
+🔧 Quick Installation
 
 # 1. Clone the repository
 ```text
-git clone [https://github.com/wickednull/malstrom.git](https://github.com/wickednull/malstrom.git)
+git clone (https://github.com/wickednull/malstrom.git)
 cd malstrom
 
-# 2. Make binaries executable
-chmod +x bin/malstrom
-
-# 3. Install core system dependencies (Debian/Ubuntu/Kali)
-sudo apt update && sudo apt install -y \
-  python3 hostapd dnsmasq iptables iw \
-  aireplay-ng tcpdump nmap responder
-
-# 4. Perform environment readiness check
-sudo ./bin/malstrom --check
+# 2. sudo ./install.sh
 ```
 
 💻 Usage
 Launch MALSTROM directly using the CLI management binary:
 # Full stack execution (Engine + Captive Portal + Web Dashboard)
 ```text
-sudo malstrom
+sudo malstrom start
 ```
 
 # Launch and automatically open the operator dashboard in default browser
@@ -201,15 +171,6 @@ Deauth Operating Modes
 
 📝 Loot Storage & Maintenance
 Harvested data is stored locally in ~/loot/malstrom/ (or /var/lib/malstrom when executed as a system service):
-~/loot/malstrom/
-├── creds.json          # Harvested portal credentials
-├── devices.json        # Client fingerprints (MAC, Hostname, OS, User-Agent)
-├── handshakes.json     # Indexed EAPOL and PMKID captures
-├── hashes.json         # Intercepted NetNTLMv2 hashes (Hashcat format)
-├── owned.json          # Validated lateral movement target pairs
-├── probes.json         # Logged Karma probe requests
-├── pcaps/              # Raw 802.1X frame captures (.pcap)
-└── scans.json          # Network recon cache
 
 Maintenance Commands
 # Wipe Loot: Clears captured loot while preserving system configuration
@@ -221,24 +182,6 @@ sudo malstrom wipe-loot
 ```text
 sudo malstrom reset
 ```
-
-📂 Repository Structure
-MALSTROM/
-├── bin/
-│   └── malstrom        # CLI management binary
-├── malstrom/
-│   ├── app.py          # Central orchestrator & CLI execution loop
-│   ├── web.py          # Dashboard HTTP server & SSE stream handler
-│   ├── portal.py       # Python-native captive portal engine
-│   ├── services.py     # hostapd, dnsmasq, and iptables lifecycle handlers
-│   ├── deauth.py       # Frame injection & raw socket engine
-│   ├── capture.py      # EAPOL / PMKID sniffer module
-│   ├── lateral.py      # Netexec credential spray wrapper
-│   ├── mitm.py         # Responder integration module
-│   └── beacon.py       # Agent payload server & session manager
-├── www/                # Web dashboard assets (JS/CSS)
-└── portal/
-    └── templates/      # OS-adaptive captive portal templates
 
 🤝 Contributing
 Contributions are welcome!
