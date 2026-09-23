@@ -88,9 +88,10 @@ The rogue AP runs on a virtual interface (`ap0`) carved from a spare radio to pr
 # 1. Clone the repository
 ```text
 git clone (https://github.com/wickednull/malstrom.git)
+
 cd malstrom
 
-# 2. sudo ./install.sh
+sudo ./install.sh
 ```
 
 💻 Usage
