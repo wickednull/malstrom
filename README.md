@@ -95,7 +95,7 @@ sudo ./install.sh
 ```
 
 💻 Usage
-Launch MALSTROM directly using the CLI management binary:
+Launch MALSTROM directly using the EXECUTABLE or.... :
 # Full stack execution (Engine + Captive Portal + Web Dashboard)
 ```text
 sudo malstrom start
