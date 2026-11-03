@@ -13,6 +13,9 @@
   var ops = { scans: [], owned: [], hashes: [], beacons: [], mitm: { running: 0, tail: [] }, beacon: { on: 0 } };
   var wifi = { aps: [], ts: '', iface: '', running: false };
   var autopwn = { auto_harvest: false, auto_armed: false, target: null };
+  var apState = 'idle';          // idle | scanning | attacking | happy | sad | sleeping
+  var apHappyUntil = 0;
+  var apLastLogSig = '';
   var sessSel = '';
   var dirty = {};   // attack-form fields the user is editing; polls must not overwrite them
 
@@ -143,7 +146,14 @@
                  settings: 'Settings', loot: 'Loot', alerts: 'Alerts' };
     $('crumb').innerHTML = 'DarkSec / <b>' + names[v] + '</b>';
     if (v === 'settings') pollSettings();
-    if (v === 'dashboard') dashboardPoll();
+    if (v === 'dashboard') { dashboardPoll(); renderDashboardCharts(); }
+    if (v === 'attack') renderAttackCharts();
+    if (v === 'monitor') renderMonitorCharts();
+    if (v === 'recon') radarPoll(true);
+    if (v === 'lateral') renderLateralCharts();
+    if (v === 'mitm') renderMitmCharts();
+    if (v === 'loot') { lootPoll(); renderLootCharts(); }
+    if (v === 'alerts') alertsPoll();
   }
   document.querySelectorAll('.nav-item').forEach(function (b) {
     b.addEventListener('click', function () { setView(b.getAttribute('data-view')); });
@@ -179,6 +189,7 @@
         (st.portal_mode || '?') + ' portal · template ' + (st.template || 'wifi_login')
       : 'No target set — open the Attack tab and ENGAGE a network to begin.';
     $('db-go-attack').textContent = act ? '\u2694 VIEW ATTACK' : '\u2694 OPEN ATTACK';
+    renderDashboardCharts();
   }
 
   function renderActivity(evs) {
@@ -200,6 +211,228 @@
   function dashboardPoll() {
     apiGet('log', { n: 14 }).then(function (l) {
       if (l && l.ok) renderActivity(l.events);
+    });
+  }
+
+  function renderDashboardCharts() {
+    if (!window.MChart) return;
+    var C = MChart.COLORS;
+    var s = radar.snap || {};
+    var ser = s.series || {};
+    var total = (ser.total || []).slice();
+    var events = (ser.events || []).slice();
+    var n = Math.max(total.length, events.length);
+    while (total.length < n) total.unshift(0);
+    while (events.length < n) events.unshift(0);
+
+    MChart.line($('chart-db-traffic'), {
+      labels: ser.times || [],
+      series: [
+        { name: 'packets', color: C.red, data: total, fill: true, width: 2 },
+        { name: 'events', color: C.cyan, data: events, width: 1.5 }
+      ]
+    });
+
+    var l = loot || {};
+    var rows = [
+      ['creds', (l.creds || []).length, '#ff5c5c'],
+      ['devices', (l.devices || []).length, '#5fd0ff'],
+      ['handshakes', (l.handshakes || []).length, '#ffb454'],
+      ['cracked', (l.cracked || []).length, '#7cffb2'],
+      ['probes', (l.probes || []).length, '#c084fc'],
+      ['files', (l.files || []).length, '#6ea8ff']
+    ];
+    var segs = rows.map(function (r) {
+      return { label: r[0], value: r[1], color: r[2] };
+    });
+    var sum = segs.reduce(function (a, b) { return a + b.value; }, 0);
+    $('db-loot-total').textContent = compact(sum) + ' items';
+    $('db-loot-legend').innerHTML = legendHtml(segs.filter(function (x) { return x.value; }));
+    MChart.donut($('chart-db-loot'), { segments: segs, center: compact(sum), sub: 'items' });
+
+    var radio = s.radio || {};
+    var rate = s.rate || {};
+    var counts = s.counts || {};
+    if ($('dbm-ch')) {
+      $('dbm-ch').textContent = radio.channel ? ('CH ' + radio.channel) : '—';
+      $('dbm-aps').textContent = compact(counts.aps || 0);
+      $('dbm-sta').textContent = compact(counts.clients || 0);
+      $('dbm-pps').textContent = compact(rate.packets || 0);
+    }
+  }
+
+  function renderMonitorCharts() {
+    if (!window.MChart) return;
+    var C = MChart.COLORS;
+    var s = radar.snap || {};
+    var ser = s.series || {};
+    var keys = [
+      ['probe', 'probes', C.cyan],
+      ['auth', 'auth', C.amber],
+      ['assoc', 'assoc', C.violet],
+      ['deauth', 'deauth', C.red]
+    ];
+    var maxLen = 0;
+    keys.forEach(function (k) { maxLen = Math.max(maxLen, (ser[k[0]] || []).length); });
+    var series = keys.map(function (k) {
+      var data = (ser[k[0]] || []).slice();
+      while (data.length < maxLen) data.unshift(0);
+      return { name: k[1], color: k[2], data: data, fill: k[0] === 'deauth' };
+    });
+    MChart.line($('chart-mon-events'), { labels: ser.times || [], series: series });
+
+    var clients = (s.clients || []).slice().sort(function (a, b) {
+      return (Number(b.frames) || 0) - (Number(a.frames) || 0);
+    }).slice(0, 8).map(function (c) {
+      return {
+        name: c.mac || '?',
+        value: Number(c.frames) || 0,
+        color: c.randomized ? C.violet : C.cyan
+      };
+    });
+    MChart.rank($('chart-mon-clients'), { rows: clients, limit: 8 });
+  }
+
+  /* --- client-side rolling history for the secondary views ----------------- */
+  var hist = {};
+
+  function pushHist(key, val) {
+    var h = hist[key] || (hist[key] = []);
+    h.push(Number(val) || 0);
+    if (h.length > 90) h.shift();
+    var t = hist[key + '#t'] || (hist[key + '#t'] = []);
+    t.push(Math.floor(Date.now() / 1000));
+    if (t.length > 90) t.shift();
+    return h;
+  }
+
+  function histTimes(key) {
+    return hist[key + '#t'] || [];
+  }
+
+  function renderAttackCharts() {
+    if (!window.MChart) return;
+    var C = MChart.COLORS;
+    var s = state || {};
+    var clients = pushHist('atk-clients', (s.clients || []).length);
+    var creds = pushHist('atk-creds', s.creds_count || 0);
+    var hs = pushHist('atk-hs', s.handshakes_count || 0);
+    MChart.line($('chart-atk-timeline'), {
+      emptyText: 'no samples yet \u2014 arm the chain to begin',
+      labels: histTimes('atk-clients'),
+      series: [
+        { name: 'clients', color: C.cyan, data: clients, fill: true, width: 2 },
+        { name: 'creds', color: C.red, data: creds },
+        { name: 'handshakes', color: C.amber, data: hs }
+      ]
+    });
+  }
+
+  function renderLateralCharts() {
+    if (!window.MChart) return;
+    var C = MChart.COLORS;
+    var colors = { SMB: C.red, SSH: C.green, RDP: C.cyan, WinRM: C.violet };
+    var counts = {};
+    (ops.owned || []).forEach(function (o) {
+      var p = String(o.proto || 'other').toUpperCase();
+      counts[p] = (counts[p] || 0) + 1;
+    });
+    var segs = Object.keys(counts).map(function (k) {
+      return { label: k, value: counts[k], color: colors[k] || C.amber };
+    });
+    $('legend-lat-proto').innerHTML = legendHtml(segs.filter(function (x) { return x.value; }));
+    MChart.donut($('chart-lat-proto'), {
+      segments: segs,
+      center: (ops.owned || []).length,
+      sub: 'owned'
+    });
+    var data = pushHist('lateral', (ops.owned || []).length);
+    MChart.line($('chart-lat-timeline'), {
+      labels: histTimes('lateral'),
+      series: [{ name: 'owned', color: C.red, data: data, fill: true, width: 2 }]
+    });
+  }
+
+  function renderMitmCharts() {
+    if (!window.MChart) return;
+    var C = MChart.COLORS;
+    var counts = { 'NetNTLMv2': 0, NTLM: 0, other: 0, recovered: 0 };
+    (ops.hashes || []).forEach(function (h) {
+      if (h.pass) counts.recovered += 1;
+      var tok = String(h.token || '');
+      if (/^[0-9a-fA-F]{32}$/.test(tok)) counts.NTLM += 1;
+      else if (tok.indexOf('::') >= 0) counts['NetNTLMv2'] += 1;
+      else counts.other += 1;
+    });
+    var colors = { 'NetNTLMv2': C.red, NTLM: C.cyan, other: C.amber, recovered: C.green };
+    var segs = Object.keys(counts).map(function (k) {
+      return { label: k, value: counts[k], color: colors[k] };
+    });
+    $('legend-mitm-types').innerHTML = legendHtml(segs.filter(function (x) { return x.value; }));
+    MChart.donut($('chart-mitm-types'), {
+      segments: segs,
+      center: (ops.hashes || []).length,
+      sub: 'hashes'
+    });
+    var data = pushHist('mitm', (ops.hashes || []).length);
+    MChart.line($('chart-mitm-timeline'), {
+      labels: histTimes('mitm'),
+      series: [{ name: 'hashes', color: C.amber, data: data, fill: true, width: 2 }]
+    });
+  }
+
+  function lootSegments() {
+    var l = loot || {};
+    return [
+      { label: 'creds', value: (l.creds || []).length, color: '#ff5c5c' },
+      { label: 'devices', value: (l.devices || []).length, color: '#5fd0ff' },
+      { label: 'handshakes', value: (l.handshakes || []).length, color: '#ffb454' },
+      { label: 'cracked', value: (l.cracked || []).length, color: '#7cffb2' },
+      { label: 'probes', value: (l.probes || []).length, color: '#c084fc' },
+      { label: 'files', value: (l.files || []).length, color: '#6ea8ff' }
+    ];
+  }
+
+  function renderLootCharts() {
+    if (!window.MChart) return;
+    var C = MChart.COLORS;
+    var segs = lootSegments();
+    var sum = segs.reduce(function (a, b) { return a + b.value; }, 0);
+    $('loot-mix-total').textContent = compact(sum) + ' items';
+    $('legend-loot-mix').innerHTML = legendHtml(segs.filter(function (x) { return x.value; }));
+    MChart.donut($('chart-loot-mix'), { segments: segs, center: compact(sum), sub: 'items' });
+    var data = pushHist('loot', sum);
+    MChart.line($('chart-loot-timeline'), {
+      labels: histTimes('loot'),
+      series: [{ name: 'items', color: C.red, data: data, fill: true, width: 2 }]
+    });
+  }
+
+  function renderAlertCharts(alerts) {
+    if (!window.MChart) return;
+    var C = MChart.COLORS;
+    var palette = [C.red, C.cyan, C.amber, C.violet, C.green, C.blue];
+    var counts = {};
+    (alerts || []).forEach(function (a) {
+      var src = String(a.type || 'ALERT');
+      var m = String(a.msg || '').split(':')[0].trim();
+      if (src === 'ALERT' && m && m.length < 28) src = m.toUpperCase();
+      counts[src] = (counts[src] || 0) + 1;
+    });
+    var keys = Object.keys(counts);
+    var segs = keys.map(function (k) {
+      return { label: k, value: counts[k], color: palette[keys.indexOf(k) % palette.length] };
+    });
+    $('legend-alert-types').innerHTML = legendHtml(segs.filter(function (x) { return x.value; }));
+    MChart.donut($('chart-alert-types'), {
+      segments: segs,
+      center: (alerts || []).length,
+      sub: 'alerts'
+    });
+    var data = pushHist('alerts', (alerts || []).length);
+    MChart.line($('chart-alert-timeline'), {
+      labels: histTimes('alerts'),
+      series: [{ name: 'alerts', color: C.red, data: data, fill: true, width: 2 }]
     });
   }
 
@@ -288,6 +521,132 @@
     $('st-mode').textContent = active ? (auto ? 'AUTO' : 'ENGAGED') : 'STANDBY';
     $('st-mode').style.color = active ? 'var(--green)' : 'var(--dim)';
     renderAutopwn(st);
+    renderAttackCharts();
+  }
+
+  var apPhrases = {
+    sleeping: [
+      'zzz... standing by', 'dreaming of handshakes', 'no targets in range', 'low power mode',
+      'waiting for operator', 'spider resting', 'legs folded, eyes dim',
+      'power save: engaged', 'counting captured hashes', 'idle circuits humming',
+      'wake me when you need me', 'dormant but dangerous', 'recharging mandibles',
+      '0x00: dozing', 'thermal throttling... not really', 'dreaming in hex',
+      'spider nap time', 'mandibles retracted', 'LEDs dimmed to 3%',
+      'dreaming of PMKIDs', 'hibernating the RF stack', 'quiet as a switched-off AP',
+      'resting eight legs', 'idle thread spinning', 'low voltage, high dreams',
+      'operator gone, spider sleeps', 'standby mode: engaged', 'power nap between scans',
+      'counting sheep... no, APs', 'sleeping with one eye open', 'thermal paste cooling',
+      'spider in power-save', 'dreaming of 4-way handshakes', 'no packets, no problems',
+      'rest mode: active', 'legs tucked, eyes dim', 'charging the injection caps',
+      'waiting in the dark', 'silent but ready', 'spider at rest', 'low power, high patience'
+    ],
+    scanning: [
+      'scanning the ether...', 'hunting for APs', 'who is out there?', 'listening to probes',
+      'charting the spectrum', 'sniffing the airwaves', 'beacons in the fog',
+      'mapping the RF landscape', 'channel hopping like a spider', 'probe requests incoming',
+      'ESSIDs flickering', 'RSSI hunting', 'weak signals are still signals',
+      'triangulating targets', '802.11 whispering', 'the air is thick tonight',
+      'passive reconnaissance engaged', 'no TX, only RX', 'karma listening',
+      'deauth candidates queued', 'which AP will fall first?',
+      'sweeping channels 1-14', '5GHz sweep armed', 'beacon frames rolling in',
+      'probe responses catalogued', 'client interests mapped', 'SSID entropy rising',
+      'weak APs are still APs', 'RSSI bars climbing', 'signal hunting engaged',
+      'RF noise floor nominal', 'spectrum analyzer online', 'channel utilization rising',
+      'passive scan, loud results', 'clients talking, I am listening', 'probe list growing',
+      'hidden SSIDs not so hidden', 'BSSID harvest in progress', 'vendor OUIs decoded',
+      'scanning all channels', 'dwell time per channel', 'spider senses tingling',
+      'listening for probe requests', 'client interests logged', 'APs ranked by signal',
+      'scanning like a spider on the web', 'RF reconnaissance active', 'airwaves mapped',
+      'channel plan loaded', 'scanning band 2.4 and 5', 'passive mode, active results'
+    ],
+    attacking: [
+      'deauthing target', 'kicking clients off', 'sniffing the air', 'injecting assoc probes',
+      'M1 incoming?', 'hashes incoming', 'broadcasting deauth frames',
+      'disassoc storm incoming', 'clients scattering', 'reassociation expected',
+      'PMKID hunt in progress', 'probing the AP', 'auth frame sent',
+      'assoc request fired', 'waiting for M1...', 'the AP is talking now',
+      'EAPOL in the wild', '4-way handshake watch', 'channel pinned, eyes open',
+      'deauth burst away', 'raw injection online', 'monitor mode locked',
+      'spider legs twitching', 'target acquired, engaging', 'no mercy for weak crypto',
+      'deauth frames flying', 'disassoc storm deployed', 'clients disconnecting',
+      'reassociation window open', 'EAPOL capture armed', 'M1 hunt active',
+      'assoc probe sent', 'auth accepted, assoc pending', 'PMKID probe fired',
+      'monitoring for M1', 'handshake watch engaged', 'deauth burst complete',
+      'raw 802.11 injection', 'aireplay fallback engaged', 'injection confirmed',
+      'target channel locked', 'spider striking', 'web of deauth deployed',
+      'clients will reconnect', '4-way expected shortly', 'M1 or PMKID, either way',
+      'capture pipeline hot', 'EAPOL parser watching', 'key info big-endian ready',
+      'radiotap frames flowing', 'monitor vif active', 'injection caps charged',
+      'deauthing on channel', 'broadcast deauth engaged', 'target under pressure',
+      'spider attacking', 'no clients spared', 'handshake harvest in progress'
+    ],
+    happy: [
+      'GOTCHA! handshake captured', 'PMKID secured!', 'loot acquired', 'another one for the vault',
+      'crackable material secured', 'hash secured, vault updated', 'M1 with PMKID in hand',
+      '4-way complete, PSK pending', 'loot deposited', 'the spider feasts',
+      'hashcat will love this', 'cracked soon, probably', 'vault +1',
+      'target down, hash up', 'reassociation paid off', 'crypto defeated, partially',
+      'operator, we got one', 'loot incoming to vault', 'capture confirmed',
+      'the AP leaked, as expected', 'handshake in the vault', 'PMKID extracted',
+      'crackable hash secured', 'loot table updated', 'vault growing',
+      'another hash for the pile', 'operator, loot secured', 'capture indexed',
+      'EAPOL captured and sealed', 'pcap written, verify queued', 'handshake verified',
+      'crackable material in vault', 'spider got its prey', 'hash in the bag',
+      'M1 + M2 captured', '4-way exchange complete', 'PSK recovery queued',
+      'loot mirror updated', 'handshake indexed', 'vault +1 handshake',
+      'PMKID hash exported', 'crackable 22000 ready', 'the spider celebrates',
+      'prey captured', 'hash secured for cracking', 'operator, we have loot'
+    ],
+    sad: [
+      'no handshake this round', 'target moved on', 'dwell expired', 'rotating target',
+      'better luck next AP', 'AP stayed quiet', 'no M1 leaked this time',
+      'client never reassociated', 'dwell timeout, rotating', 'skipping this one',
+      'AP is stubborn', 'no EAPOL in the air', 'probe ignored by AP',
+      'target too far or too hardened', 'moving on', 'vault unchanged this round',
+      'spider sighs', 'retrying next target', 'some APs just won\'t talk',
+      'no PMKID this round', 'AP refused to leak', 'no clients to deauth',
+      'dwell expired, no loot', 'rotating to next target', 'this AP is tough',
+      'no handshake captured', 'target skipped', 'no EAPOL frames seen',
+      'AP didn\'t respond to probes', 'monitor heard nothing', 'no loot this cycle',
+      'spider disappointed', 'vault unchanged', 'moving to next prey',
+      'this one got away', 'no capture, rotating', 'better luck next time',
+      'AP hardened or out of range', 'no M1, no PMKID', 'capture failed this round',
+      'spider hungry, no food', 'no hash this cycle', 'target evaded capture'
+    ],
+    idle: [
+      'awaiting orders, operator', 'ready when you are', 'spider standing by',
+      'point me at a target', 'idle but alert', 'systems nominal, waiting',
+      'give the word, operator', 'ready to hunt', 'legs primed',
+      'no target, no hunt', 'operator, I await your command',
+      'spider at rest, ready to strike', 'all systems green', 'standing by for orders',
+      'RF stack idle', 'monitor mode ready', 'injection caps charged',
+      'waiting for operator input', 'target queue empty', 'spider patient',
+      'legs folded, sensors on', 'ready when you are, operator', 'idle spider, active mind',
+      'no target selected', 'awaiting engagement', 'spider ready to deploy',
+      'operator, point me at a network', 'systems nominal', 'ready to hunt APs'
+    ]
+  };
+  var apSpeechTimer = null;
+  function setApSpeech(txt) {
+    var el = $('ap-speech');
+    if (el) { el.textContent = txt; el.style.animation = 'none'; void el.offsetWidth; el.style.animation = ''; }
+  }
+  function rotateApSpeech() {
+    var arr = apPhrases[apState] || apPhrases.idle;
+    setApSpeech(arr[Math.floor(Math.random() * arr.length)]);
+  }
+  function setApState(s) {
+    apState = s;
+    var el = $('ap-char');
+    if (el) el.setAttribute('data-state', s);
+    var st = $('ap-state');
+    if (st) {
+      var labels = { idle: 'IDLE', scanning: 'SCANNING', attacking: 'HUNTING', happy: 'GOTCHA!', sad: 'MISSED', sleeping: 'SLEEPING' };
+      st.textContent = labels[s] || String(s).toUpperCase();
+    }
+    if (apSpeechTimer) clearInterval(apSpeechTimer);
+    rotateApSpeech();
+    apSpeechTimer = setInterval(rotateApSpeech, 3200);
   }
 
   function renderAutopwn(st) {
@@ -308,6 +667,67 @@
           : 'Armed — waiting for a target')
       : 'Standby — scans APs, deauths, captures handshakes/PMKIDs, then rotates';
     $('autopwn-status').textContent = txt;
+
+    if (!autopwn.auto_harvest) {
+      setApState('sleeping');
+    } else if (Date.now() < apHappyUntil) {
+      setApState('happy');
+    } else if (autopwn.auto_armed) {
+      setApState('attacking');
+    } else {
+      setApState('scanning');
+    }
+  }
+
+  function isApEvent(l) {
+    if (!l) return false;
+    var t = (l.type || '').toUpperCase();
+    if (t === 'AUTO' || t === 'DEAUTH' || t === 'HANDSHAKE' || t === 'PMKID' || t === 'VERIFY') return true;
+    var m = (l.msg || '').toLowerCase();
+    return m.indexOf('autopwn') !== -1 || m.indexOf('payload capture') !== -1 ||
+           m.indexOf('pmkid') !== -1 || m.indexOf('handshake') !== -1 ||
+           m.indexOf('deauth') !== -1;
+  }
+
+  function renderApLog(evs) {
+    var box = $('ap-log');
+    if (!box) return;
+    var filtered = (evs || []).filter(isApEvent);
+    // detect new captures → happy
+    var sig = filtered.map(function (e) { return (e.ts || '') + '|' + (e.type || '') + '|' + (e.msg || ''); }).join('\\n');
+    if (sig && sig !== apLastLogSig) {
+      // check if the newest relevant event is a capture
+      var newest = filtered[filtered.length - 1];
+      if (newest && ((newest.type || '').toUpperCase() === 'HANDSHAKE' || (newest.type || '').toUpperCase() === 'PMKID')) {
+        apHappyUntil = Date.now() + 3500;
+        setApState('happy');
+      }
+      apLastLogSig = sig;
+    }
+    if (!filtered.length) {
+      box.innerHTML = '<div class="empty">No auto-capture activity yet — arm the wraith to begin</div>';
+      $('ap-log-count').textContent = '0';
+      return;
+    }
+    var html = '';
+    filtered.slice(-40).forEach(function (l) {
+      html += '<div class="logline ' + (l.type || 'INFO') + '">' +
+        '<span class="ts">[' + (l.ts || '') + ']</span> ' +
+        escHtml(l.msg || '') + '</div>';
+    });
+    box.innerHTML = html;
+    box.scrollTop = box.scrollHeight;
+    $('ap-log-count').textContent = String(filtered.length);
+  }
+
+  function apLogPoll() {
+    apiGet('log', { n: 60 }).then(function (l) {
+      if (l && l.ok) renderApLog(l.events);
+    });
+  }
+
+  function escHtml(s) {
+    return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   }
 
   function statusPoll() {
@@ -321,8 +741,11 @@
       }
       state = s;
       applyToForm(s.state);
+      var sys = s.sys || {};
+      if ($('side-iface')) $('side-iface').textContent = sys.mon_iface || sys.host || '—';
+      if ($('side-version')) $('side-version').textContent = sys.version || '—';
+      if ($('side-led')) $('side-led').className = 'side-led' + (s.engine ? ' on' : '');
       if (cur === 'dashboard') renderDashboard();
-      $('nav-loot').textContent = s.creds_count || 0;
       if (s.clients && (s.clients.length || $('tbl-clients').querySelectorAll('tr').length === 1)) {
         renderClients(s.clients);
       }
@@ -372,14 +795,20 @@
         files: l.files || [],
         pinned: l.pinned || { creds: [], devices: [] }
       };
-      $('nav-loot').textContent = loot.creds.length;
+      $('nav-loot').textContent = loot.creds.length + loot.devices.length + loot.handshakes.length +
+        loot.cracked.length + loot.probes.length + loot.files.length;
       $('lc-creds').textContent = loot.creds.length || '';
       $('lc-devices').textContent = loot.devices.length || '';
-      $('lc-hs').textContent = loot.handshakes.length || '';
+      var hsOnly = (loot.handshakes || []).filter(function (h) { return (h.kind || '').toLowerCase() !== 'pmkid'; });
+      $('lc-hs').textContent = hsOnly.length || '';
+      $('lc-pmkid').textContent = (loot.handshakes || []).filter(function (h) { return (h.kind || '').toLowerCase().indexOf('pmkid') !== -1; }).length || '';
+      $('lc-pcaps').textContent = (loot.files || []).filter(function (f) { return /\.pcap$/i.test(f.name || ''); }).length || '';
       $('lc-cracked').textContent = loot.cracked.length || '';
       $('lc-probes').textContent = loot.probes.length || '';
       renderLootTab(lootTab);
       renderProbePanel();
+      renderLootCharts();
+      if (cur === 'dashboard') renderDashboardCharts();
     });
   }
 
@@ -410,6 +839,8 @@
     $('table-creds').parentElement.style.display = (tab === 'creds') ? '' : 'none';
     $('table-devices').parentElement.style.display = (tab === 'devices') ? '' : 'none';
     $('table-handshakes').parentElement.style.display = (tab === 'handshakes') ? '' : 'none';
+    $('table-pmkid').parentElement.style.display = (tab === 'pmkid') ? '' : 'none';
+    $('table-pcaps').parentElement.style.display = (tab === 'pcaps') ? '' : 'none';
     $('table-cracked').parentElement.style.display = (tab === 'cracked') ? '' : 'none';
     $('table-probes').parentElement.style.display = (tab === 'probes') ? '' : 'none';
     $('loot-files').style.display = (tab === 'files') ? '' : 'none';
@@ -456,11 +887,12 @@
     }
     if (tab === 'handshakes') {
       var hs = $('table-handshakes').querySelector('tbody');
-      if (!loot.handshakes.length) {
-        hs.innerHTML = '<tr><td colspan="7" class="empty">No handshake / PMKID captures yet</td></tr>';
+      var hsList = (loot.handshakes || []).filter(function (h) { return (h.kind || '').toLowerCase() !== 'pmkid'; });
+      if (!hsList.length) {
+        hs.innerHTML = '<tr><td colspan="8" class="empty">No 4-way handshake captures yet</td></tr>';
         return;
       }
-      hs.innerHTML = loot.handshakes.map(function (h) {
+      hs.innerHTML = hsList.map(function (h) {
         var v = h.checked
           ? (h.valid
               ? '<span style="color:var(--green)">&#10003; crackable</span>'
@@ -485,6 +917,119 @@
           downloadUrl(API + '?' + qs({ action: 'hashcat_export', token: session.sid || '',
                                        file: decodeURIComponent(a.getAttribute('data-hs')) }),
                       'malstrom_capture.22000');
+        });
+      });
+      return;
+    }
+    if (tab === 'pmkid') {
+      var pm = $('table-pmkid').querySelector('tbody');
+      var pmList = (loot.handshakes || []).filter(function (h) { return (h.kind || '').toLowerCase().indexOf('pmkid') !== -1; });
+      if (!pmList.length) {
+        pm.innerHTML = '<tr><td colspan="8" class="empty">No PMKID captures yet</td></tr>';
+        return;
+      }
+      pm.innerHTML = pmList.map(function (h) {
+        var v = h.checked
+          ? (h.valid
+              ? '<span style="color:var(--green)">&#10003; crackable</span>'
+              : '<span style="color:var(--red)">&#10007; not usable</span>')
+          : '<span style="color:var(--amber)">—</span>';
+        var dl = '';
+        if (h.file) {
+          dl = ' <a class="btn" data-hs="' + encodeURIComponent(h.file) +
+            '" href="#" style="padding:2px 8px;font-size:11px">22000</a>';
+        }
+        var pcapCell = esc(h.file ? h.file.replace(/^.*\//, '') : 'no pcap');
+        var linkCell = dl ? dl.replace('22000', '22000') : '—';
+        return '<tr><td>' + esc(fmtTime(h.ts)) + '</td><td>' + esc(h.bssid || '—') + '</td><td>' +
+          esc(h.ssid || '—') + '</td><td>' + esc(h.client || '—') + '</td><td>' + v + '</td><td>' +
+          pcapCell + '</td><td>' + linkCell + '</td><td class="pass">' +
+          (h.cracked
+            ? '<span style="color:var(--green)">' + esc(h.cracked) + '</span>'
+            : '—') + '</td></tr>';
+      }).join('');
+      pm.querySelectorAll('a[data-hs]').forEach(function (a) {
+        a.addEventListener('click', function (e) {
+          e.preventDefault();
+          downloadUrl(API + '?' + qs({ action: 'hashcat_export', token: session.sid || '',
+                                       file: decodeURIComponent(a.getAttribute('data-hs')) }),
+                      'malstrom_pmkid.22000');
+        });
+      });
+      return;
+    }
+    if (tab === 'pcaps') {
+      var pc = $('table-pcaps').querySelector('tbody');
+      var pcList = (loot.files || []).filter(function (f) { return /\.pcap$/i.test(f.name || ''); });
+      if (!pcList.length) {
+        pc.innerHTML = '<tr><td colspan="4" class="empty">No pcaps captured yet</td></tr>';
+        return;
+      }
+      pc.innerHTML = pcList.map(function (f) {
+        var n = f.name || '';
+        var dl = '<a class="btn" data-pcap="' + encodeURIComponent(n) + '" href="#" style="padding:2px 8px;font-size:11px">DOWNLOAD</a>';
+        var exp = /\.pcap$/i.test(n)
+          ? ' <a class="btn" data-hs="' + encodeURIComponent(n) + '" href="#" style="padding:2px 8px;font-size:11px">22000</a>'
+          : '';
+        var pv = ' <button class="btn" data-pv="' + encodeURIComponent(n) + '" style="padding:2px 8px;font-size:11px">PREVIEW</button>';
+        var rm = ' <a class="btn" data-rm="' + encodeURIComponent(n) + '" href="#" style="padding:2px 8px;font-size:11px;color:var(--red)">DELETE</a>';
+        return '<tr><td>' + esc(n) + '</td><td>' + esc(f.size) + ' B</td><td>' + dl + pv + rm + '</td><td>' + exp + '</td></tr>';
+      }).join('');
+      pc.querySelectorAll('a[data-pcap]').forEach(function (a) {
+        a.addEventListener('click', function (e) {
+          e.preventDefault();
+          var url = API + '?' + qs({ action: 'loot_file', token: session.sid || '', file: decodeURIComponent(a.getAttribute('data-pcap')) });
+          fetch(url, { credentials: 'same-origin' }).then(function (r) { return r.blob(); }).then(function (b) {
+            downloadBlob(b, decodeURIComponent(a.getAttribute('data-pcap')).replace(/^.*\//, ''));
+          });
+        });
+      });
+      pc.querySelectorAll('a[data-rm]').forEach(function (a) {
+        a.addEventListener('click', function (e) {
+          e.preventDefault();
+          var fn = decodeURIComponent(a.getAttribute('data-rm'));
+          if (!confirm('Delete ' + fn + '?')) return;
+          apiGet('loot_delete', { file: fn }).then(function (r) {
+            if (!r.ok) { alert(r.error || 'delete failed'); return; }
+            lootPoll();
+          });
+        });
+      });
+      pc.querySelectorAll('a[data-hs]').forEach(function (a) {
+        a.addEventListener('click', function (e) {
+          e.preventDefault();
+          downloadUrl(API + '?' + qs({ action: 'hashcat_export', token: session.sid || '',
+                                       file: decodeURIComponent(a.getAttribute('data-hs')) }),
+                      'malstrom_capture.22000');
+        });
+      });
+      pc.querySelectorAll('button[data-pv]').forEach(function (b) {
+        b.addEventListener('click', function (e) {
+          e.preventDefault();
+          var f = decodeURIComponent(b.getAttribute('data-pv'));
+          var pv = $('pcap-preview');
+          pv.style.display = '';
+          pv.innerHTML = '<div style="opacity:0.6">Analyzing ' + esc(f) + '...</div>';
+          apiGet('pcap_info', { file: f }).then(function (r) {
+            if (!r || !r.ok) { pv.innerHTML = '<div style="color:var(--red)">Preview failed: ' + esc((r && r.error) || '?') + '</div>'; return; }
+            var essid = r.essid || '—';
+            if (/^[0-9a-fA-F]+$/.test(essid) && essid.length % 2 === 0 && essid.length > 0) {
+              try { essid = decodeURIComponent(essid.replace(/../g, '%$&')); } catch (e) { }
+            }
+            pv.innerHTML =
+              '<div style="margin-bottom:6px; color:#ff6b6b; font-weight:700;">' + esc(f) + '</div>' +
+              '<div style="display:grid; grid-template-columns: repeat(auto-fit,minmax(110px,1fr)); gap:6px;">' +
+                '<div><span style="opacity:0.5">packets</span> ' + r.packets + '</div>' +
+                '<div><span style="opacity:0.5">beacons</span> ' + r.beacons + '</div>' +
+                '<div><span style="opacity:0.5">auth</span> ' + r.auth + '</div>' +
+                '<div><span style="opacity:0.5">assoc</span> ' + r.assoc + '</div>' +
+                '<div><span style="opacity:0.5">EAPOL</span> ' + r.eapol + '</div>' +
+                '<div><span style="opacity:0.5">M1</span> ' + r.m1 + ' <span style="opacity:0.5">M2</span> ' + r.m2 + ' <span style="opacity:0.5">M3</span> ' + r.m3 + ' <span style="opacity:0.5">M4</span> ' + r.m4 + '</div>' +
+                '<div><span style="opacity:0.5">PMKID</span> ' + r.pmkid + '</div>' +
+                '<div><span style="opacity:0.5">ESSID</span> ' + esc(essid || '—') + '</div>' +
+              '</div>' +
+              (r.eapol === 0 ? '<div style="margin-top:6px; color:var(--amber)">No EAPOL frames — AP did not leak a PMKID and no client reassociated.</div>' : '');
+          });
         });
       });
       return;
@@ -520,10 +1065,16 @@
         box.innerHTML = '<div class="empty">No files in the loot tree yet</div>';
         return;
       }
+      var nonPcap = (loot.files || []).filter(function (f) { return !/\.pcap$/i.test(f.name || ''); });
+      if (!nonPcap.length) {
+        box.innerHTML = '<div class="empty">No non-pcap files in the loot tree yet (pcaps have their own tab)</div>';
+        return;
+      }
       box.innerHTML = '<table class="cred-table"><thead><tr><th>File</th><th>Size</th><th></th></tr></thead><tbody>' +
-        loot.files.map(function (f) {
+        nonPcap.map(function (f) {
           return '<tr><td>' + esc(f.name) + '</td><td>' + esc(f.size) + ' B</td><td>' +
-            '<a class="dl" href="#" data-file="' + encodeURIComponent(f.name) + '">DOWNLOAD</a></td></tr>';
+            '<a class="dl" href="#" data-file="' + encodeURIComponent(f.name) + '">DOWNLOAD</a> ' +
+            '<a class="rm" href="#" data-file="' + encodeURIComponent(f.name) + '" style="color:var(--red)">DELETE</a></td></tr>';
         }).join('') + '</tbody></table>';
       box.querySelectorAll('a.dl').forEach(function (a) {
         a.addEventListener('click', function (e) {
@@ -531,6 +1082,16 @@
           var url = API + '?' + qs({ action: 'loot_file', token: session.sid || '', file: decodeURIComponent(a.getAttribute('data-file')) });
           fetch(url, { credentials: 'same-origin' }).then(function (r) { return r.blob(); }).then(function (b) {
             downloadBlob(b, decodeURIComponent(a.getAttribute('data-file')).replace(/^.*\//, ''));
+          });
+        });
+      });
+      box.querySelectorAll('a.rm').forEach(function (a) {
+        a.addEventListener('click', function (e) {
+          e.preventDefault();
+          if (!confirm('Delete ' + decodeURIComponent(a.getAttribute('data-file')) + '?')) return;
+          apiGet('loot_delete', { file: decodeURIComponent(a.getAttribute('data-file')) }).then(function (r) {
+            if (!r.ok) { alert(r.error || 'delete failed'); return; }
+            lootPoll();
           });
         });
       });
@@ -575,6 +1136,7 @@
           return '<div class="alert-item"><span class="time">' + esc(fmtTime(al.ts)) + '</span>' + esc(al.msg) + '</div>';
         }).reverse().join('');
       }
+      renderAlertCharts(a.alerts || []);
     });
   }
 
@@ -600,6 +1162,8 @@
       renderOwned();
       renderHashes();
       renderMitm();
+      renderLateralCharts();
+      renderMitmCharts();
       renderSessions();
       renderBeacon();
       buildHostList();
@@ -880,74 +1444,721 @@
     toast('Host list loaded into Lateral');
   });
 
-  // --- Wi-Fi recon (live 802.11 AP picker) --------------------------------------
+  // --- Radio recon (passive radar + deep scan) ---------------------------------
 
-  function wifiSignal(sig) {
-    if (sig === null || sig === undefined || isNaN(sig)) return '<span style="color:var(--dim)">—</span>';
-    var color = sig >= -60 ? 'var(--green)' : (sig >= -75 ? 'var(--amber)' : 'var(--dim)');
-    return '<span style="color:' + color + '">' + esc(sig) + ' dBm</span>';
+  var radar = { snap: null, deep: [], deepAt: 0, pollAt: 0 };
+
+  function updateClock() {
+    var el = $('top-clock');
+    if (!el) return;
+    var d = new Date();
+    var p = function (n) { return (n < 10 ? '0' : '') + n; };
+    el.textContent = p(d.getHours()) + ':' + p(d.getMinutes()) + ':' + p(d.getSeconds());
   }
 
-  function renderWifi() {
-    var tb = $('tbl-wifi').querySelector('tbody');
-    var q = ($('wifi-filter').value || '').trim().toLowerCase();
-    var list = (wifi.aps || []).filter(function (ap) {
-      if (!q) return true;
-      return [ap.ssid, ap.bssid, ap.vendor, ap.security, String(ap.channel)]
-        .some(function (v) { return String(v || '').toLowerCase().indexOf(q) >= 0; });
+  function ago(sec) {
+    sec = Math.max(0, Number(sec) || 0);
+    if (sec < 60) return Math.round(sec) + 's';
+    if (sec < 3600) return Math.floor(sec / 60) + 'm ' + Math.round(sec % 60) + 's';
+    return Math.floor(sec / 3600) + 'h ' + Math.floor((sec % 3600) / 60) + 'm';
+  }
+
+  function bytes(n) {
+    n = Number(n) || 0;
+    if (n >= 1e9) return (n / 1e9).toFixed(2) + ' GB';
+    if (n >= 1e6) return (n / 1e6).toFixed(1) + ' MB';
+    if (n >= 1e3) return (n / 1e3).toFixed(1) + ' kB';
+    return Math.round(n) + ' B';
+  }
+
+  function compact(n) {
+    return (window.MChart && MChart.fmtCompact) ? MChart.fmtCompact(n)
+      : String(Math.round(Number(n) || 0));
+  }
+
+  function sigClass(sig) {
+    if (sig === null || sig === undefined) return 'weak';
+    return sig >= -60 ? 'good' : (sig >= -75 ? 'mid' : 'weak');
+  }
+
+  function sigHtml(sig) {
+    if (sig === null || sig === undefined) return '<span class="sig weak">—</span>';
+    return '<span class="sig ' + sigClass(sig) + '">' + esc(sig) + '</span>';
+  }
+
+  function secGroup(sec) {
+    sec = String(sec || 'OPEN').toUpperCase();
+    if (sec.indexOf('WPA3') >= 0) return 'WPA3';
+    if (sec.indexOf('WPA2') >= 0) return 'WPA2';
+    if (sec.indexOf('WPA') >= 0) return 'WPA';
+    if (sec.indexOf('WEP') >= 0) return 'WEP';
+    return 'OPEN';
+  }
+
+  function secBadge(sec) {
+    var g = secGroup(sec);
+    return '<span class="sec-badge ' + g.toLowerCase() + '">' + esc(sec || 'OPEN') + '</span>';
+  }
+
+  function clone(obj) {
+    var out = {};
+    Object.keys(obj || {}).forEach(function (k) { out[k] = obj[k]; });
+    return out;
+  }
+
+  function mergedAps() {
+    var snap = radar.snap || {};
+    var map = {}, list = [];
+    (snap.aps || []).forEach(function (a) {
+      var x = clone(a);
+      x._live = true;
+      map[a.bssid] = x;
+      list.push(x);
     });
+    (radar.deep || []).forEach(function (d) {
+      if (!d || !d.bssid) return;
+      var b = String(d.bssid).toUpperCase();
+      var cur = map[b];
+      if (cur) {
+        if ((!cur.ssid || cur.ssid === '[hidden]' || cur.hidden) &&
+            d.ssid && d.ssid !== '[hidden]') {
+          cur.ssid = d.ssid;
+          cur.hidden = false;
+        }
+        if (!cur.vendor && d.vendor) cur.vendor = d.vendor;
+        if (d.security && secGroup(d.security) !== 'OPEN') cur.security = d.security;
+        if (d.wps) cur.wps = true;
+        if ((cur.signal === null || cur.signal === undefined) && d.signal != null) {
+          cur.signal = d.signal;
+        }
+        cur._deep = true;
+      } else {
+        var x = clone(d);
+        x.bssid = b;
+        x.hidden = !d.ssid || d.ssid === '[hidden]';
+        x.frames = 0;
+        x.clients = 0;
+        x.beacons = 0;
+        x._deep = true;
+        map[b] = x;
+        list.push(x);
+      }
+    });
+    list.sort(function (a, b) {
+      return ((b.signal == null ? -1000 : b.signal) -
+              (a.signal == null ? -1000 : a.signal));
+    });
+    return list;
+  }
+
+  function kpi(id, value, sub) {
+    var v = $(id);
+    if (v) v.textContent = value;
+    if (sub && $(id + '-s')) $(id + '-s').textContent = sub;
+  }
+
+  function renderReconHead() {
+    var s = radar.snap;
+    var pill = $('recon-state');
+    var btn = $('btn-radar-toggle');
+    if (!s) {
+      pill.className = 'recon-pill idle';
+      pill.textContent = 'RADAR OFFLINE';
+      $('recon-iface').textContent = 'iface —';
+      $('recon-uptime').textContent = 'uptime —';
+      $('recon-last').textContent = 'last frame —';
+      return;
+    }
+    var active = !!s.active;
+    var armed = !!s.armed;
+    var running = !!s.running;
+    var text, cls;
+    if (!active) { text = 'RADAR PAUSED'; cls = 'idle'; }
+    else if (armed) { text = 'RADAR ARMED'; cls = 'armed'; }
+    else if (!running) { text = 'RADAR STARTING'; cls = 'idle'; }
+    else { text = 'LIVE · ' + (s.hop ? 'HOPPING' : 'PINNED'); cls = 'live'; }
+    pill.className = 'recon-pill ' + cls;
+    pill.textContent = text;
+
+    btn.textContent = active ? 'PAUSE RADAR' : 'RESUME RADAR';
+    $('recon-hop').checked = !!s.hop;
+    if (s.dwell && String($('recon-dwell').value) !== String(Math.round(s.dwell))) {
+      var opt = $('recon-dwell').querySelector('option[value="' + Math.round(s.dwell) + '"]');
+      if (opt) $('recon-dwell').value = opt.value;
+    }
+
+    var now = Date.now() / 1000;
+    var iface = s.iface || s.bound || s.radio && s.radio.iface || '—';
+    $('recon-iface').textContent = 'iface ' + (iface || '—');
+    $('recon-uptime').textContent = s.uptime ? 'up ' + ago(s.uptime) : 'uptime —';
+    if (s.error) {
+      $('recon-last').textContent = s.error;
+    } else if (s.last_frame) {
+      $('recon-last').textContent = 'last frame ' + ago(Math.max(0, now - s.last_frame)) + ' ago';
+    } else {
+      $('recon-last').textContent = 'no frames yet';
+    }
+  }
+
+  function renderReconKpis() {
+    var s = radar.snap;
+    if (!s) return;
+    var c = s.counts || {};
+    var b = s.breakdown || {};
+    kpi('kpi-aps', c.aps || 0,
+        (b.hidden || 0) + ' hidden · ' + (b.open || 0) + ' open');
+    kpi('kpi-clients', c.clients || 0,
+        (b.randomized || 0) + ' randomized MACs');
+    kpi('kpi-devices', c.devices || 0, (c.probes || 0) + ' probe SSIDs');
+    kpi('kpi-pps', compact((s.rate || {}).packets || 0), '3s average');
+    kpi('kpi-eps', compact((s.rate || {}).events || 0), 'live event rate');
+    kpi('kpi-frames', compact(c.frames || 0), bytes(c.bytes || 0));
+    kpi('kpi-eapol', compact(c.eapol || 0), 'handshake frames');
+    kpi('kpi-deauth', compact(c.deauth || 0), (c.errors || 0) + ' bad FCS');
+  }
+
+  function bandColor(band) {
+    band = String(band || '');
+    if (band.indexOf('5') === 0) return '#5fd0ff';
+    if (band.indexOf('6') === 0) return '#c084fc';
+    return '#ff5c5c';
+  }
+
+  function renderReconCharts() {
+    var s = radar.snap;
+    if (!s || !window.MChart) return;
+    var C = MChart.COLORS;
+    var ser = s.series || {};
+
+    MChart.line($('chart-traffic'), {
+      labels: ser.times || [],
+      series: [
+        { name: 'total', color: C.red, data: ser.total || [], width: 2, fill: true, glow: true },
+        { name: 'mgmt', color: C.amber, data: ser.mgmt || [] },
+        { name: 'data', color: C.cyan, data: ser.data || [] },
+        { name: 'ctrl', color: C.violet, data: ser.ctrl || [] }
+      ]
+    });
+
+    MChart.line($('chart-events'), {
+      labels: ser.times || [],
+      series: [
+        { name: 'probes', color: C.cyan, data: ser.probe || [] },
+        { name: 'auth', color: C.amber, data: ser.auth || [] },
+        { name: 'assoc', color: C.violet, data: ser.assoc || [] },
+        { name: 'deauth', color: C.red, data: ser.deauth || [], fill: true }
+      ]
+    });
+
+    var chans = (s.channels || []).sort(function (a, b) { return Number(a.ch) - Number(b.ch); });
+    channelData = chans;
+    drawChannelChart($('chart-channels'));
+
+    var ss = s.survey_series || {};
+    var busy = ss.busy || [], rx = ss.rx || [], tx = ss.tx || [];
+    var n = Math.max(busy.length, rx.length, tx.length);
+    if (n && busy.length < n) {
+      while (busy.length < n) busy.unshift(0);
+      while (rx.length < n) rx.unshift(0);
+      while (tx.length < n) tx.unshift(0);
+    }
+    var hasSurvey = busy.concat(rx, tx).some(function (v) { return Number(v) > 0; });
+    var note = $('recon-survey-note');
+    if (note) note.textContent = hasSurvey ? '' : 'no air-time counters from this driver';
+    MChart.line($('chart-radio'), {
+      max: 100,
+      series: [
+        { name: 'busy', color: C.cyan, data: busy, fill: true, width: 2 },
+        { name: 'rx', color: C.amber, data: rx },
+        { name: 'tx', color: C.violet, data: tx }
+      ]
+    });
+  }
+
+  /* --- Channel activity chart + hover tooltip ------------------------------ */
+
+  var channelData = [];
+  var channelHoverIdx = -1;
+  var channelTooltipReady = false;
+
+  function drawChannelChart(cv) {
+    if (!cv) return;
+    MChart.bars(cv, {
+      labels: channelData.map(function (c) { return c.ch; }),
+      values: channelData.map(function (c) { return c.total || 0; }),
+      colors: channelData.map(function (c) { return bandColor(c.band); }),
+      logScale: true,
+      showValues: false,
+      highlight: channelHoverIdx
+    });
+  }
+
+  function channelKey(v) {
+    var n = Number(v);
+    return isFinite(n) && n > 0 ? n : 0;
+  }
+
+  function channelCounts(snap) {
+    var aps = {}, clients = {};
+    ((snap && snap.aps) || []).forEach(function (a) {
+      var k = channelKey(a.channel);
+      if (k) aps[k] = (aps[k] || 0) + 1;
+    });
+    ((snap && snap.clients) || []).forEach(function (c) {
+      var k = channelKey(c.channel);
+      if (k) clients[k] = (clients[k] || 0) + 1;
+    });
+    return { aps: aps, clients: clients };
+  }
+
+  /* --- Generic hover readout for line charts ------------------------------- */
+  var lineHoverReady = false;
+  var lineHoverIds = [
+    'chart-traffic', 'chart-events', 'chart-radio', 'chart-db-traffic',
+    'chart-mon-events', 'chart-atk-timeline', 'chart-lat-timeline',
+    'chart-mitm-timeline', 'chart-loot-timeline', 'chart-alert-timeline'
+  ];
+
+  function clockText(sec) {
+    var d = new Date(Number(sec) * 1000);
+    if (isNaN(d.getTime())) return '';
+    var p = function (n) { return (n < 10 ? '0' : '') + n; };
+    return p(d.getHours()) + ':' + p(d.getMinutes()) + ':' + p(d.getSeconds());
+  }
+
+  function initLineHovers() {
+    if (lineHoverReady) return;
+    lineHoverReady = true;
+    var tip = document.createElement('div');
+    tip.id = 'line-tooltip';
+    tip.className = 'chart-tooltip';
+    document.body.appendChild(tip);
+
+    lineHoverIds.forEach(function (id) {
+      var cv = $(id);
+      if (!cv) return;
+      cv.addEventListener('mousemove', function (e) {
+        var series = cv._series || [];
+        if (!series.length) { tip.style.display = 'none'; return; }
+        var rect = cv.getBoundingClientRect();
+        var padL = 38;
+        var pw = rect.width - padL - 10;
+        var x = e.clientX - rect.left;
+        var n = 0;
+        series.forEach(function (sr) { n = Math.max(n, sr.data.length); });
+        if (n < 1 || pw <= 0 || x < padL || x > padL + pw) {
+          tip.style.display = 'none';
+          return;
+        }
+        var idx = Math.round((x - padL) / pw * (n - 1));
+        idx = Math.max(0, Math.min(n - 1, idx));
+        var labels = cv._labels || [];
+        var head = labels.length
+          ? clockText(labels[Math.min(idx, labels.length - 1)])
+          : 'sample ' + (idx + 1) + ' / ' + n;
+        var rows = series.map(function (sr) {
+          var off = n - sr.data.length;
+          var v = (idx >= off) ? sr.data[idx - off] : 0;
+          return '<div class="tt-row"><i style="background:' + sr.color + '"></i>' +
+            '<span>' + esc(sr.name || '') + '</span><b>' + compact(v) + '</b></div>';
+        }).join('');
+        tip.innerHTML = '<div class="tt-h">' + esc(head) + '</div>' + rows;
+        tip.style.display = 'block';
+        var left = e.clientX + 16;
+        if (left + 220 > window.innerWidth) left = e.clientX - 236;
+        tip.style.left = Math.max(6, left) + 'px';
+        tip.style.top = Math.max(8, e.clientY - 14) + 'px';
+      });
+      cv.addEventListener('mouseleave', function () { tip.style.display = 'none'; });
+    });
+  }
+
+  function initChannelTooltip() {
+    if (channelTooltipReady) return;
+    var cv = $('chart-channels');
+    if (!cv) return;
+    channelTooltipReady = true;
+
+    var tip = document.createElement('div');
+    tip.id = 'chart-tooltip';
+    tip.className = 'chart-tooltip';
+    document.body.appendChild(tip);
+
+    var activeIdx = -1;
+
+    function hide() {
+      tip.style.display = 'none';
+      activeIdx = -1;
+      if (channelHoverIdx !== -1) {
+        channelHoverIdx = -1;
+        drawChannelChart(cv);
+      }
+    }
+
+    cv.addEventListener('mousemove', function (e) {
+      if (!channelData.length) { hide(); return; }
+
+      var rect = cv.getBoundingClientRect();
+      var padL = 38, padR = 10;
+      var pw = rect.width - padL - padR;
+      var n = channelData.length;
+      if (pw <= 0 || n <= 0) { hide(); return; }
+
+      var x = e.clientX - rect.left;
+      var y = e.clientY - rect.top;
+      var slot = pw / n;
+      var idx = Math.floor((x - padL) / slot);
+
+      // only respond inside the plot area and over a real bar slot
+      if (idx < 0 || idx >= n || x < padL || x > padL + pw ||
+          y < 0 || y > rect.height) {
+        hide();
+        return;
+      }
+
+      var c = channelData[idx];
+      if (!c) { hide(); return; }
+
+      if (idx !== activeIdx) {
+        activeIdx = idx;
+        channelHoverIdx = idx;
+        drawChannelChart(cv);
+        var snap = radar.snap || {};
+        var counts = channelCounts(snap);
+        var ch = Number(c.ch);
+        var apN = counts.aps[ch] || 0;
+        var cliN = counts.clients[ch] || 0;
+        var tuned = channelKey((snap.radio || {}).channel);
+        var seen = Number(c.last);
+        var sum = 0;
+        for (var k = 0; k < channelData.length; k++) sum += Number(channelData[k].total) || 0;
+        var share = sum > 0 ? (Number(c.total) || 0) / sum * 100 : 0;
+
+        tip.innerHTML =
+          '<div class="tooltip-header">Channel ' + esc(String(c.ch)) +
+            (ch === tuned ? ' &middot; live' : '') + '</div>' +
+          '<div class="tooltip-row"><span class="label">Band</span>' +
+            '<span class="value">' + esc(c.band || '\u2014') + '</span></div>' +
+          '<div class="tooltip-row"><span class="label">Frames</span>' +
+            '<span class="value hot">' + compact(c.total || 0) + '</span></div>' +
+          '<div class="tooltip-row"><span class="label">Share</span>' +
+            '<span class="value">' + share.toFixed(1) + '%</span></div>' +
+          '<div class="tooltip-row"><span class="label">Rate</span>' +
+            '<span class="value">' + (Number(c.pps) || 0).toFixed(1) + ' pkt/s</span></div>' +
+          '<div class="tooltip-row"><span class="label">APs</span>' +
+            '<span class="value">' + apN + '</span></div>' +
+          '<div class="tooltip-row"><span class="label">Clients</span>' +
+            '<span class="value">' + cliN + '</span></div>' +
+          '<div class="tooltip-row"><span class="label">Last frame</span>' +
+            '<span class="value">' + (seen > 0 ? ago(Date.now() / 1000 - seen) + ' ago' : 'never') +
+            '</span></div>';
+      }
+
+      tip.style.display = 'block';
+      var tw = tip.offsetWidth || 200;
+      var th = tip.offsetHeight || 110;
+      var left = e.pageX + 16;
+      var top = e.pageY - 12;
+      if (left + tw > window.scrollX + document.documentElement.clientWidth - 8) {
+        left = e.pageX - tw - 16;
+      }
+      if (top + th > window.scrollY + document.documentElement.clientHeight - 8) {
+        top = window.scrollY + document.documentElement.clientHeight - th - 8;
+      }
+      if (top < window.scrollY + 8) top = window.scrollY + 8;
+      tip.style.left = Math.max(window.scrollX + 8, left) + 'px';
+      tip.style.top = top + 'px';
+    });
+
+    cv.addEventListener('mouseleave', hide);
+    cv.addEventListener('blur', hide);
+  }
+
+  function renderReconRadio() {
+    var s = radar.snap;
+    if (!s) return;
+    var r = s.radio || {};
+    var rows = [
+      ['interface', r.iface || s.iface || '—'],
+      ['mode', r.mode ? String(r.mode).toUpperCase() : '—'],
+      ['mac', r.mac || '—'],
+      ['channel', r.channel ? ('ch ' + r.channel +
+        (r.freq ? ' · ' + r.freq + ' MHz' : '') +
+        (r.width ? ' · ' + r.width : '')) : '—'],
+      ['band', r.band || '—'],
+      ['phy/driver', ((r.phy || '—') + (r.driver ? ' · ' + r.driver : ''))],
+      ['tx power', r.txpower ? r.txpower + ' dBm' : '—'],
+      ['regdomain', r.regdom || '—'],
+      ['kernel', r.kernel || '—']
+    ];
+    if (r.error || s.error) rows.push(['error', r.error || s.error]);
+    $('recon-radio').innerHTML = rows.map(function (x) {
+      return '<div class="k">' + esc(x[0]) + '</div><div class="v">' + esc(x[1]) + '</div>';
+    }).join('');
+
+    var tb = $('tbl-survey').querySelector('tbody');
+    var survey = (s.survey || []).slice().sort(function (a, b) {
+      return (b.busy_pct || 0) - (a.busy_pct || 0);
+    }).slice(0, 12);
+    if (!survey.length) {
+      tb.innerHTML = '<tr><td colspan="7" class="empty">Survey data unavailable — driver does not expose channel time</td></tr>';
+      return;
+    }
+    var tuned = String(r.channel || s.radio && s.radio.channel || '');
+    tb.innerHTML = survey.map(function (e) {
+      var inUse = e.in_use || String(e.ch) === tuned;
+      return '<tr><td>' + esc(e.ch || '?') + '</td><td>' + esc(e.band || '—') +
+        '</td><td>' + esc((e.busy_pct || 0).toFixed(1)) + '%</td><td>' +
+        esc((e.rx_pct || 0).toFixed(1)) + '%</td><td>' +
+        esc((e.tx_pct || 0).toFixed(1)) + '%</td><td>' +
+        (e.noise == null ? '—' : esc(e.noise) + ' dBm') + '</td><td>' +
+        (inUse ? '<span class="sec-badge wpa3">TUNED</span>' : '<span class="hint">—</span>') +
+        '</td></tr>';
+    }).join('');
+  }
+
+  function legendHtml(segs) {
+    return segs.map(function (x) {
+      return '<span><i style="background:' + x.color + '"></i>' +
+        esc(x.label) + ' · ' + esc(x.value) + '</span>';
+    }).join('');
+  }
+
+  function renderReconBreakdown() {
+    var s = radar.snap;
+    if (!s) return;
+    var b = s.breakdown || {};
+    var bands = b.bands || {};
+    var sec = b.security || {};
+
+    var bandSegs = Object.keys(bands).sort().map(function (k) {
+      return { label: k, value: bands[k], color: bandColor(k) };
+    });
+    if (!bandSegs.length) bandSegs = [{ label: 'none', value: 0, color: '#3a1d23' }];
+    $('legend-bands').innerHTML = legendHtml(bandSegs.filter(function (x) { return x.value; }));
+    MChart.donut($('chart-bands'), {
+      segments: bandSegs,
+      center: s.counts && s.counts.aps || 0,
+      sub: 'APs'
+    });
+
+    var groups = { OPEN: 0, WEP: 0, WPA: 0, WPA2: 0, WPA3: 0 };
+    Object.keys(sec).forEach(function (k) { groups[secGroup(k)] += sec[k]; });
+    var secColors = { OPEN: '#ff5140', WEP: '#ffb454', WPA: '#7cffb2',
+                      WPA2: '#5fd0ff', WPA3: '#c084fc' };
+    var secSegs = Object.keys(groups).map(function (k) {
+      return { label: k, value: groups[k], color: secColors[k] };
+    });
+    $('legend-security').innerHTML = legendHtml(secSegs.filter(function (x) { return x.value; }));
+    MChart.donut($('chart-security'), {
+      segments: secSegs,
+      center: (b.open || 0) + (b.wpa3 || 0) ? ((b.open || 0) + ' / ' + (b.wpa3 || 0)) : '0 / 0',
+      sub: 'open / WPA3'
+    });
+
+    var stats = [
+      ['hidden', b.hidden || 0], ['wps', b.wps || 0],
+      ['open', b.open || 0], ['wpa3', b.wpa3 || 0],
+      ['random', b.randomized || 0], ['eapol', s.counts && s.counts.eapol || 0],
+      ['retry', b.frame_mix && b.frame_mix.retry || 0],
+      ['deauth', b.frame_mix && b.frame_mix.deauth || 0]
+    ];
+    $('bd-stats').innerHTML = stats.map(function (x) {
+      return '<div class="bd-stat"><b>' + esc(compact(x[1])) + '</b><span>' +
+        esc(x[0]) + '</span></div>';
+    }).join('');
+
+    var vendors = b.vendors || [];
+    $('vendor-list').innerHTML = vendors.length ? vendors.map(function (v) {
+      return '<div class="vendor-row"><span>' + esc(v.name || '?') +
+        '</span><span>' + esc(v.count) + '</span></div>';
+    }).join('') : '<div class="empty" style="padding:12px">No client vendors seen yet</div>';
+  }
+
+  function reconFilter() {
+    return ($('recon-filter').value || '').trim().toLowerCase();
+  }
+
+  function reconMatch(o, q) {
+    if (!q) return true;
+    return [o.ssid, o.bssid, o.mac, o.vendor, o.security, o.channel, o.band]
+      .some(function (v) { return String(v == null ? '' : v).toLowerCase().indexOf(q) >= 0; });
+  }
+
+  function renderReconAps() {
+    var tb = $('tbl-wifi').querySelector('tbody');
+    var q = reconFilter();
+    var list = mergedAps().filter(function (a) { return reconMatch(a, q); });
     if (!list.length) {
-      tb.innerHTML = '<tr><td colspan="9" class="empty">' +
-        ((wifi.aps && wifi.aps.length)
+      tb.innerHTML = '<tr><td colspan="11" class="empty">' +
+        (radar.snap && (radar.snap.aps || []).length
           ? 'No AP matches the filter'
-          : 'Run a scan to list nearby APs') + '</td></tr>';
+          : 'Listening for beacons…') + '</td></tr>';
       return;
     }
     tb.innerHTML = list.map(function (ap) {
-      var flags = [];
-      if (ap.wps) flags.push('WPS');
-      if (ap.adhoc) flags.push('ADHOC');
-      if (ap.ssid === '[hidden]') flags.push('HIDDEN');
-      var ssid = esc(ap.ssid === '[hidden]' ? '' : (ap.ssid || ''));
+      var ssid = ap.hidden ? '' : (ap.ssid || '');
       var bssid = esc(ap.bssid || '');
-      var ch = esc(ap.channel || '6');
-      return '<tr><td>' + esc(ap.ssid || '[hidden]') + '</td><td>' + esc(ap.bssid || '—') +
-        '</td><td>' + esc(ap.vendor || '—') + '</td><td>' + esc(ap.channel || '?') +
-        '</td><td>' + esc(ap.band || '—') + '</td><td>' + wifiSignal(ap.signal) +
-        '</td><td>' + esc(ap.security || '—') + '</td><td>' +
-        (flags.length ? esc(flags.join(' ')) : '—') + '</td>' +
-        '<td style="white-space:nowrap">' +
-        '<button class="btn" data-use="' + bssid + '" data-ssid="' + ssid +
-        '" data-ch="' + ch + '" style="padding:4px 8px;font-size:11px">USE</button>' +
+      var ch = esc(ap.channel || '?');
+      var label = ap.hidden ? '<span class="hint">[hidden]</span>' : esc(ap.ssid || '');
+      var flags = [];
+      if (ap.wps) flags.push('<span class="sec-badge wep">WPS</span>');
+      if (ap._deep && !ap._live) flags.push('<span class="sec-badge wpa3">SCAN</span>');
+      return '<tr><td>' + label + '</td><td><code>' + bssid + '</code></td><td>' +
+        esc(ap.vendor || '—') + '</td><td>' + ch + '</td><td>' + esc(ap.band || '—') +
+        '</td><td>' + sigHtml(ap.signal) + '</td><td>' + secBadge(ap.security) +
+        (flags.length ? ' ' + flags.join(' ') : '') + '</td><td>' + esc(ap.clients || 0) + '</td><td>' +
+        (ap.frames ? esc(compact(ap.frames)) : '—') + '</td><td>' +
+        (ap.age != null ? esc(ago(ap.age)) : 'scan') + '</td>' +
+        '<td><div class="row-actions">' +
+        '<button class="btn" data-use="' + bssid + '" data-ssid="' + esc(ssid) +
+        '" data-ch="' + ch + '">USE</button>' +
         '<button class="btn" data-harvest="passive" data-use="' + bssid +
-        '" data-ssid="' + ssid + '" data-ch="' + ch +
-        '" style="padding:4px 8px;font-size:11px;margin-left:4px">PASSIVE</button>' +
+        '" data-ssid="' + esc(ssid) + '" data-ch="' + ch + '">PASSIVE</button>' +
         '<button class="btn" data-harvest="active" data-use="' + bssid +
-        '" data-ssid="' + ssid + '" data-ch="' + ch +
-        '" style="padding:4px 8px;font-size:11px;margin-left:4px">ACTIVE</button>' +
-        '</td></tr>';
+        '" data-ssid="' + esc(ssid) + '" data-ch="' + ch + '">ACTIVE</button>' +
+        '</div></td></tr>';
     }).join('');
-    tb.querySelectorAll('button[data-use]').forEach(function (b) {
-      b.addEventListener('click', function () {
-        $('cfg-ssid').value = b.getAttribute('data-ssid') || '';
-        $('cfg-bssid').value = b.getAttribute('data-use') || '';
-        $('cfg-channel').value = b.getAttribute('data-ch') || '6';
-        markDirty('cfg-ssid'); markDirty('cfg-bssid'); markDirty('cfg-channel');
-        setView('attack');
-        toast('Target loaded from recon: ' +
-              (b.getAttribute('data-ssid') || b.getAttribute('data-use')));
-      });
-    });
-    tb.querySelectorAll('button[data-harvest]').forEach(function (b) {
-      b.addEventListener('click', function () {
-        harvest({
-          ssid: b.getAttribute('data-ssid') || '',
-          bssid: b.getAttribute('data-use') || '',
-          channel: b.getAttribute('data-ch') || '6'
-        }, b.getAttribute('data-harvest'));
-      });
+  }
+
+  function renderReconClients() {
+    var tb = $('tbl-clients').querySelector('tbody');
+    var snap = radar.snap || {};
+    var q = reconFilter();
+    var list = (snap.clients || []).filter(function (c) { return reconMatch(c, q); });
+    if (!list.length) {
+      tb.innerHTML = '<tr><td colspan="10" class="empty">No clients captured yet</td></tr>';
+      return;
+    }
+    tb.innerHTML = list.map(function (c) {
+      var mac = esc(c.mac || '—');
+      var tags = c.randomized ? ' <span class="sec-badge open">RND</span>' : '';
+      return '<tr><td><code>' + mac + '</code></td><td>' + esc(c.vendor || '—') + tags +
+        '</td><td>' + esc(c.ssid || '—') + '</td><td>' + esc(c.channel || '?') +
+        '</td><td>' + sigHtml(c.signal) + '</td><td>' + esc(compact(c.frames)) +
+        '</td><td>' + esc(compact(c.data)) + '</td><td>' +
+        esc((c.probes || []).length) + '</td><td>' + esc(ago(c.age)) + '</td>' +
+        '<td><button class="btn" data-copy="' + mac + '" style="padding:4px 7px;font-size:10px">COPY</button></td></tr>';
+    }).join('');
+  }
+
+  function renderReconProbes() {
+    var tb = $('tbl-radar-probes').querySelector('tbody');
+    var list = (radar.snap && radar.snap.probes) || [];
+    if (!list.length) {
+      tb.innerHTML = '<tr><td colspan="5" class="empty">No probe requests yet</td></tr>';
+      return;
+    }
+    tb.innerHTML = list.map(function (p) {
+      return '<tr><td>' + esc(p.ssid || '[wildcard]') + '</td><td>' + esc(p.clients || 0) +
+        '</td><td>' + esc(p.count || 0) + '</td><td>' + esc(p.channel || '?') +
+        '</td><td>' + esc(ago(p.age)) + '</td></tr>';
+    }).join('');
+  }
+
+  function renderReconFeed() {
+    var box = $('radar-feed');
+    var list = (radar.snap && radar.snap.events) || [];
+    if (!list.length) {
+      box.innerHTML = '<div class="empty">Waiting for frames…</div>';
+      return;
+    }
+    box.innerHTML = list.slice(0, 44).map(function (e) {
+      var kind = String(e.kind || 'EVENT').toUpperCase();
+      var detail = [];
+      if (e.src) detail.push(e.src);
+      if (e.dst) detail.push('→ ' + e.dst);
+      if (e.ch) detail.push('ch ' + e.ch);
+      if (e.signal != null) detail.push(e.signal + ' dBm');
+      if (e.detail) detail.push(e.detail);
+      return '<div class="feed-line"><span class="t">' + esc(e.ts || '') +
+        '</span><span class="feed-kind k-' + esc(kind) + '">' + esc(kind) +
+        '</span><span class="d" title="' + esc(detail.join(' · ')) + '">' +
+        esc(detail.join(' · ')) + '</span></div>';
+    }).join('');
+  }
+
+  function renderRecon() {
+    if (!radar.snap) {
+      renderReconHead();
+      return;
+    }
+    renderReconHead();
+    renderReconKpis();
+    renderReconCharts();
+    renderReconRadio();
+    renderReconBreakdown();
+    renderReconAps();
+    renderReconClients();
+    renderReconProbes();
+    renderReconFeed();
+  }
+
+  function radarPoll(force) {
+    var now = Date.now();
+    if (!force && now - radar.pollAt < 900) return;
+    radar.pollAt = now;
+    apiGet('radar').then(function (r) {
+      if (r && r.ok) {
+        radar.snap = r;
+        updateTopStats(r);
+        if (cur === 'recon') renderRecon();
+        if (cur === 'dashboard') renderDashboardCharts();
+        if (cur === 'monitor') renderMonitorCharts();
+      }
     });
   }
+
+  function updateTopStats(r) {
+    if (!$('top-channel')) return;
+    var radio = (r && r.radio) || {};
+    var rate = (r && r.rate) || {};
+    $('top-channel').textContent = radio.channel ? ('CH ' + radio.channel) : '—';
+    $('top-pps').textContent = (Number(rate.packets) || 0).toFixed(0);
+    $('top-eps').textContent = (Number(rate.events) || 0).toFixed(0);
+    if ($('side-uptime') && r && r.uptime) $('side-uptime').textContent = ago(r.uptime);
+  }
+
+  function radarCmd(params) {
+    return apiGet('radar_cmd', params).then(function (r) {
+      if (r && r.ok) {
+        radar.snap = r;
+        renderRecon();
+      } else {
+        toast('Radar: ' + ((r && r.error) || 'command failed'), true);
+      }
+      return r;
+    });
+  }
+
+  $('btn-radar-toggle').addEventListener('click', function () {
+    var on = radar.snap ? (radar.snap.active ? 0 : 1) : 1;
+    radarCmd({ on: on }).then(function (r) {
+      if (r && r.ok) toast(on ? 'Radar resumed' : 'Radar paused');
+    });
+  });
+
+  $('recon-hop').addEventListener('change', function () {
+    var on = this.checked ? 1 : 0;
+    radarCmd({ hop: on }).then(function (r) {
+      if (r && r.ok) toast('Radar hopping ' + (on ? 'enabled — karma yields' : 'disabled'));
+    });
+  });
+
+  $('recon-dwell').addEventListener('change', function () {
+    radarCmd({ dwell: this.value });
+  });
+
+  $('btn-radar-reset').addEventListener('click', function () {
+    radarCmd({ reset: 1 }).then(function (r) {
+      if (r && r.ok) toast('Radar inventory cleared');
+    });
+  });
+
+  $('recon-filter').addEventListener('input', function () {
+    renderReconAps();
+    renderReconClients();
+  });
 
   function harvest(ap, mode) {
     if (!ap.ssid) { toast('Cannot harvest a hidden network without an SSID', true); return; }
@@ -980,28 +2191,71 @@
     });
   }
 
+  $('tbl-wifi').addEventListener('click', function (e) {
+    var b = e.target.closest ? e.target.closest('button') : null;
+    if (!b) return;
+    var ssid = b.getAttribute('data-ssid') || '';
+    var bssid = b.getAttribute('data-use') || '';
+    var ch = b.getAttribute('data-ch') || '6';
+    var mode = b.getAttribute('data-harvest');
+    if (mode) {
+      harvest({ ssid: ssid, bssid: bssid, channel: ch }, mode);
+      return;
+    }
+    if (!b.hasAttribute('data-use')) return;
+    $('cfg-ssid').value = ssid;
+    $('cfg-bssid').value = bssid;
+    $('cfg-channel').value = ch;
+    markDirty('cfg-ssid'); markDirty('cfg-bssid'); markDirty('cfg-channel');
+    setView('attack');
+    toast('Target loaded from recon: ' + (ssid || bssid));
+  });
+
+  $('tbl-clients').addEventListener('click', function (e) {
+    var b = e.target.closest ? e.target.closest('button[data-copy]') : null;
+    if (!b) return;
+    var mac = b.getAttribute('data-copy') || '';
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(mac).then(function () {
+        toast('Copied ' + mac);
+      }, function () { toast('Copy failed', true); });
+    } else {
+      var t = document.createElement('textarea');
+      t.value = mac;
+      document.body.appendChild(t);
+      t.select();
+      try { document.execCommand('copy'); toast('Copied ' + mac); }
+      catch (err) { toast('Copy failed', true); }
+      t.remove();
+    }
+  });
+
   function runWifiScan() {
     if (wifi.running) { toast('Wi-Fi scan already running', true); return; }
     wifi.running = true;
-    $('wifi-scan-state').textContent = 'Scanning… (managed scan, up to ~15s)';
+    $('wifi-scan-state').textContent = 'Deep scanning… (managed scan, up to ~15s)';
     apiGet('scan').then(function (r) {
       wifi.running = false;
       if (r && r.ok) {
         wifi.aps = r.aps || [];
         wifi.iface = r.iface || '';
         wifi.ts = r.ts || '';
+        radar.deep = r.aps || [];
+        radar.deepAt = Date.now();
+        var extra = Math.max(0, radar.deep.length -
+          ((radar.snap && radar.snap.aps) || []).length);
         $('wifi-scan-state').textContent =
-          wifi.aps.length + ' APs via ' + (wifi.iface || '?') +
-          (wifi.ts ? ' — ' + wifi.ts : '');
+          radar.deep.length + ' APs via ' + (wifi.iface || '?') +
+          (extra ? ' (+' + extra + ' new)' : '') + ' — merged into radar';
+        renderRecon();
+        toast('Deep scan merged: ' + radar.deep.length + ' APs');
       } else {
-        $('wifi-scan-state').textContent = 'Scan failed';
+        $('wifi-scan-state').textContent = 'Deep scan failed';
         toast('Wi-Fi recon failed: ' + ((r && r.error) || '?'), true);
       }
-      renderWifi();
     });
   }
   $('btn-wifi-scan').addEventListener('click', runWifiScan);
-  $('wifi-filter').addEventListener('input', renderWifi);
 
   // Rogue-subnet quick target: locks the nmap target onto the /24 the rogue
   // AP itself serves (victims connected to the portal).
@@ -1194,6 +2448,8 @@
 
   function appendLog(line) {
     var box = $('log-stream');
+    var ph = box.querySelector('.empty');
+    if (ph) box.removeChild(ph);
     var lg = line.line ? JSON.parse(line.line) : line;
     var t = lg.ts || '';
     var m = lg.msg || '';
@@ -1531,6 +2787,20 @@
     if (booted) return;
     booted = true;
     setView('dashboard');
+    initChannelTooltip();
+    initLineHovers();
+    document.addEventListener('keydown', function (e) {
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      var t = e.target || {};
+      var tag = String(t.tagName || '').toLowerCase();
+      if (tag === 'input' || tag === 'textarea' || tag === 'select' || t.isContentEditable) return;
+      var idx = -1;
+      if (e.key >= '1' && e.key <= '9') idx = Number(e.key) - 1;
+      else if (e.key === '0') idx = 9;
+      if (idx >= 0 && views[idx]) { e.preventDefault(); setView(views[idx]); }
+    });
+    updateClock();
+    setInterval(updateClock, 1000);
     loadTemplates();
     statusPoll();
     lootPoll();
@@ -1545,6 +2815,9 @@
     setInterval(alertsPoll, 5000);
     setInterval(pollSettings, 6500);
     setInterval(dashboardPoll, 4000);
+    setInterval(apLogPoll, 2500);
+    apLogPoll();
+    setInterval(radarPoll, 2000);
     // operator-presence heartbeat: the daemon in app mode (desktop icon) stops
     // itself once this stops arriving, i.e. when the dashboard is closed.
     setInterval(function () { apiGet('ping', {}); }, 15000);

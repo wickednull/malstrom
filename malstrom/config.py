@@ -102,6 +102,17 @@ AUTO_CHANNELS = [c.strip() for c in os.environ.get('MALSTROM_AUTO_CHANNELS', '')
                  if c.strip().isdigit()]
 AUTO_SKIP_CAPTURED = os.environ.get('MALSTROM_AUTO_SKIP_CAPTURED', '1') != '0'
 
+# Live radar (Recon deck). The passive 802.11 telemetry engine reads the
+# monitor vif the karma sweep already uses and never transmits. RADAR_HOP lets
+# the radar own idle channel hopping instead of karma. Defaults ON for active
+# spectrum monitoring; karma yields when radar is hopping.
+RADAR = os.environ.get('MALSTROM_RADAR', '1') != '0'
+RADAR_HOP = os.environ.get('MALSTROM_RADAR_HOP', '1') != '0'
+RADAR_DWELL = float(os.environ.get('MALSTROM_RADAR_DWELL', '2'))
+RADAR_HOP_CHANNELS = [c.strip() for c in
+                      os.environ.get('MALSTROM_RADAR_HOP_CHANNELS', '').split(',')
+                      if c.strip().isdigit()]
+
 # TLS victim portal: self-signed cert, second listener that the 443 DNAT
 # targets so https-first captive probes land on a real (if untrusted) TLS
 # portal instead of a broken plaintext redirect.
@@ -152,6 +163,15 @@ SSID_CLOAK = os.environ.get('MALSTROM_SSID_CLOAK', '0') != '0'
 CAPTURE_MODE = os.environ.get('MALSTROM_CAPTURE', 'handshake')   # off|handshake|pmkid|both
 KARMA = os.environ.get('MALSTROM_KARMA', '1') != '0'
 SHIELD_AFTER_CAPTURE = os.environ.get('MALSTROM_SHIELD', '1') != '0'
+
+# Active PMKID probe (pwnagotchi/bettercap parity). In pmkid/both capture
+# modes the engine injects a crafted association request with a random station
+# MAC + RSN PMKID list, then captures the AP's EAPOL M1. This is what makes a
+# client-less AP lootable; without it "PMKID" mode was only a passive
+# substring match that almost never fired.
+PMKID_PROBE = os.environ.get('MALSTROM_PMKID_PROBE', '1') != '0'
+PMKID_INTERVAL = float(os.environ.get('MALSTROM_PMKID_INTERVAL', '8'))
+PMKID_TRIES = int(os.environ.get('MALSTROM_PMKID_TRIES', '3'))
 
 # Karma auto-respond (PineAP-style). OFF by default: answering probe requests
 # means *transmitting*, which makes the box detectable as an AP storm — the
@@ -245,5 +265,6 @@ DEFAULT_STATE = {
     'redir_target': REDIRECT_TARGET,
     'auto_harvest': AUTO_HARVEST,
     'auto_armed': False,
+    'capture_only': False,
     'updated': 0,
 }

@@ -36,27 +36,66 @@
     </div>
 
     <h3>Overview</h3>
-    <button class="nav-item active" data-view="dashboard">Dashboard</button>
+    <button class="nav-item active" data-view="dashboard">
+      <span class="ni"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><rect x="2" y="2" width="5" height="5"/><rect x="9" y="2" width="5" height="5"/><rect x="2" y="9" width="5" height="5"/><rect x="9" y="9" width="5" height="5"/></svg></span>
+      <span class="nl">Dashboard</span>
+    </button>
 
     <h3>Operation</h3>
-    <button class="nav-item" data-view="attack">Attack</button>
-    <button class="nav-item" data-view="monitor">Monitor</button>
+    <button class="nav-item" data-view="attack">
+      <span class="ni"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><circle cx="8" cy="8" r="5"/><path d="M8 1.5v2.5M8 12v2.5M1.5 8H4M12 8h2.5"/><circle cx="8" cy="8" r="1.2" fill="currentColor" stroke="none"/></svg></span>
+      <span class="nl">Attack</span>
+    </button>
+    <button class="nav-item" data-view="monitor">
+      <span class="ni"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M1.5 8s2.4-4 6.5-4 6.5 4 6.5 4-2.4 4-6.5 4-6.5-4-6.5-4z"/><circle cx="8" cy="8" r="1.8"/></svg></span>
+      <span class="nl">Monitor</span>
+    </button>
 
     <h3>Post-exploitation</h3>
-    <button class="nav-item" data-view="recon">Recon <span class="count" id="nav-recon">0</span></button>
-    <button class="nav-item" data-view="lateral">Lateral <span class="count" id="nav-owned">0</span></button>
-    <button class="nav-item" data-view="mitm">MITM <span class="count" id="nav-hash">0</span></button>
-    <button class="nav-item" data-view="sessions">Sessions <span class="count" id="nav-sess">0</span></button>
+    <button class="nav-item" data-view="recon">
+      <span class="ni"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><circle cx="8" cy="8" r="6"/><circle cx="8" cy="8" r="3"/><path d="M8 8l3.8-3.8"/><circle cx="8" cy="8" r="0.9" fill="currentColor" stroke="none"/></svg></span>
+      <span class="nl">Recon</span>
+      <span class="count" id="nav-recon">0</span>
+    </button>
+    <button class="nav-item" data-view="lateral">
+      <span class="ni"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><circle cx="3.5" cy="4" r="1.8"/><circle cx="12.5" cy="4" r="1.8"/><circle cx="8" cy="12.5" r="1.8"/><path d="M5 5.2l2.2 5.6M11 5.2l-2.2 5.6M5.3 4h5.4"/></svg></span>
+      <span class="nl">Lateral</span>
+      <span class="count" id="nav-owned">0</span>
+    </button>
+    <button class="nav-item" data-view="mitm">
+      <span class="ni"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M2.5 8h3.5M6 8l3.5-3.6M6 8l3.5 3.6"/><circle cx="12.2" cy="3.8" r="1.7"/><circle cx="12.2" cy="12.2" r="1.7"/><path d="M2.5 8H1"/></svg></span>
+      <span class="nl">MITM</span>
+      <span class="count" id="nav-hash">0</span>
+    </button>
+    <button class="nav-item" data-view="sessions">
+      <span class="ni"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><rect x="1.5" y="3" width="13" height="10" rx="1"/><path d="M4 6l2.4 2L4 10M8.4 10h3.6"/></svg></span>
+      <span class="nl">Sessions</span>
+      <span class="count" id="nav-sess">0</span>
+    </button>
 
     <h3>Intelligence</h3>
-    <button class="nav-item" data-view="loot">Loot <span class="count" id="nav-loot">0</span></button>
-    <button class="nav-item" data-view="alerts">Alerts <span class="count" id="nav-alerts">0</span></button>
+    <button class="nav-item" data-view="loot">
+      <span class="ni"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M2 5.2L8 2l6 3.2v5.6L8 14l-6-3.2z"/><path d="M2 5.2L8 8.4l6-3.2M8 8.4V14"/></svg></span>
+      <span class="nl">Loot</span>
+      <span class="count" id="nav-loot">0</span>
+    </button>
+    <button class="nav-item" data-view="alerts">
+      <span class="ni"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M4 11V7.2a4 4 0 018 0V11l1.4 1.8H2.6z"/><path d="M6.6 14a1.5 1.5 0 002.8 0"/></svg></span>
+      <span class="nl">Alerts</span>
+      <span class="count" id="nav-alerts">0</span>
+    </button>
 
     <h3>System</h3>
-    <button class="nav-item" data-view="settings">Settings</button>
+    <button class="nav-item" data-view="settings">
+      <span class="ni"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><circle cx="8" cy="8" r="2.4"/><path d="M8 1.6v1.9M8 12.5v1.9M1.6 8h1.9M12.5 8h1.9M3.5 3.5l1.3 1.3M11.2 11.2l1.3 1.3M12.5 3.5l-1.3 1.3M4.8 11.2l-1.3 1.3"/></svg></span>
+      <span class="nl">Settings</span>
+    </button>
 
     <div class="side-foot">
-      <div id="side-status">OFFLINE</div>
+      <div class="side-row"><span class="side-led" id="side-led"></span><span id="side-status">STANDBY</span></div>
+      <div class="side-row"><span class="k">IFACE</span><span class="v" id="side-iface">—</span></div>
+      <div class="side-row"><span class="k">UPTIME</span><span class="v" id="side-uptime">—</span></div>
+      <div class="side-row"><span class="k">VER</span><span class="v" id="side-version">—</span></div>
       <div class="auth" id="side-token"></div>
     </div>
   </aside>
@@ -66,6 +105,10 @@
       <div class="breadcrumb" id="crumb">DarkSec / <b>Attack</b></div>
       <div class="badge idle" id="status-badge">IDLE</div>
       <div class="spacer"></div>
+      <div class="top-stat"><span class="k">CH</span><span class="v" id="top-channel">—</span></div>
+      <div class="top-stat"><span class="k">PKT/S</span><span class="v" id="top-pps">0</span></div>
+      <div class="top-stat"><span class="k">EV/S</span><span class="v" id="top-eps">0</span></div>
+      <span class="top-clock" id="top-clock">--:--:--</span>
       <span class="badge" id="see-target">—</span>
       <button class="btn" id="btn-refresh">REFRESH</button>
     </div>
@@ -74,7 +117,7 @@
     <div class="content">
       <!-- ============ DASHBOARD VIEW ============ -->
       <section id="view-dashboard" style="display:none">
-        <div class="grid3" style="margin-bottom:16px">
+        <div class="grid4" style="margin-bottom:16px">
           <div class="panel stat"><div class="v" id="db-engine">—</div><div class="l">Engine</div></div>
           <div class="panel stat"><div class="v" id="db-ap">—</div><div class="l">Rogue AP</div></div>
           <div class="panel stat"><div class="v" id="db-mitm">—</div><div class="l">MITM</div></div>
@@ -88,6 +131,12 @@
             <div class="set">
               <button class="btn primary" id="db-go-attack" data-goto="attack">&#9876; OPEN ATTACK</button>
               <button class="btn" id="db-go-monitor" data-goto="monitor">Monitor live</button>
+            </div>
+            <div class="mini-stats">
+              <div><b id="dbm-ch">—</b><span>radio ch</span></div>
+              <div><b id="dbm-aps">0</b><span>APs seen</span></div>
+              <div><b id="dbm-sta">0</b><span>stations</span></div>
+              <div><b id="dbm-pps">0</b><span>pkt/s</span></div>
             </div>
           </div>
 
@@ -103,6 +152,27 @@
               <div class="panel stat"><div class="v" id="db-files">0</div><div class="l">Files</div></div>
               <div class="panel stat"><div class="v" id="db-alerts">0</div><div class="l">Alerts</div></div>
             </div>
+          </div>
+        </div>
+
+        <div class="grid2" style="margin-bottom:16px">
+          <div class="panel chart-panel">
+            <div class="chart-head">
+              <h3>Spectrum load <span class="chart-sub">packets/s &amp; events/s</span></h3>
+              <div class="chart-legend">
+                <span><i style="background:#ff5c5c"></i>packets</span>
+                <span><i style="background:#5fd0ff"></i>events</span>
+              </div>
+            </div>
+            <canvas id="chart-db-traffic" class="chart"></canvas>
+          </div>
+          <div class="panel chart-panel">
+            <div class="chart-head">
+              <h3>Loot mix</h3>
+              <span class="chart-sub" id="db-loot-total">0 items</span>
+            </div>
+            <canvas id="chart-db-loot" class="donut" style="height:158px"></canvas>
+            <div class="chart-legend donut-legend" id="db-loot-legend"></div>
           </div>
         </div>
 
@@ -229,11 +299,23 @@
 
       <!-- ============ ATTACK VIEW ============ -->
       <section id="view-attack">
-        <div class="grid3" style="margin-bottom:16px">
+        <div class="grid4" style="margin-bottom:16px">
           <div class="panel stat"><div class="v" id="st-clients">0</div><div class="l">Clients</div></div>
           <div class="panel stat"><div class="v" id="st-creds">0</div><div class="l">Credentials</div></div>
           <div class="panel stat"><div class="v" id="st-deauth">0</div><div class="l">Deauth burst</div></div>
           <div class="panel stat"><div class="v" id="st-mode">IDLE</div><div class="l">Chain status</div></div>
+        </div>
+
+        <div class="panel chart-panel" style="margin-bottom:16px">
+          <div class="chart-head">
+            <h3>Engagement timeline <span class="chart-sub">live samples</span></h3>
+            <div class="chart-legend">
+              <span><i style="background:#5fd0ff"></i>clients</span>
+              <span><i style="background:#ff5c5c"></i>creds</span>
+              <span><i style="background:#ffb454"></i>handshakes</span>
+            </div>
+          </div>
+          <canvas id="chart-atk-timeline" class="chart"></canvas>
         </div>
 
         <div class="grid2">
@@ -402,6 +484,85 @@
             <span class="hint" id="autopwn-status">Standby — scans APs, deauths, captures handshakes/PMKIDs, then rotates</span>
           </div>
           <div class="hint" style="margin-top:8px">Yields to manual attacks. Skips OPEN/WEP and networks already in the vault.</div>
+
+          <div class="autopwn-box" id="autopwn-box">
+            <div class="ap-char-wrap">
+              <div class="ap-speech" id="ap-speech">awaiting orders, operator</div>
+              <div class="ap-char" id="ap-char" data-state="idle">
+                <svg viewBox="0 0 200 180" width="220" height="200" xmlns="http://www.w3.org/2000/svg" aria-label="Maelstrom spider-bot">
+                  <defs>
+                    <radialGradient id="ap-glow" cx="50%" cy="40%" r="60%">
+                      <stop offset="0%" stop-color="#ff3b3b" stop-opacity="0.95"/>
+                      <stop offset="100%" stop-color="#3a0000" stop-opacity="0.2"/>
+                    </radialGradient>
+                    <filter id="ap-blur"><feGaussianBlur stdDeviation="3"/></filter>
+                    <filter id="ap-glowf"><feGaussianBlur stdDeviation="1.5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+                  </defs>
+                  <!-- aura -->
+                  <ellipse class="ap-aura" cx="100" cy="150" rx="60" ry="12" fill="#ff0000" opacity="0.25" filter="url(#ap-blur)"/>
+                  <!-- legs (8) -->
+                  <g class="ap-legs" stroke="#ff3b3b" stroke-width="2.2" fill="none" stroke-linecap="round">
+                    <!-- left side -->
+                    <path class="ap-leg ap-leg-l1" d="M70 95 L40 70 L20 40"/>
+                    <path class="ap-leg ap-leg-l2" d="M68 105 L30 95 L8 80"/>
+                    <path class="ap-leg ap-leg-l3" d="M70 118 L34 125 L10 145"/>
+                    <path class="ap-leg ap-leg-l4" d="M74 130 L44 150 L22 175"/>
+                    <!-- right side -->
+                    <path class="ap-leg ap-leg-r1" d="M130 95 L160 70 L180 40"/>
+                    <path class="ap-leg ap-leg-r2" d="M132 105 L170 95 L192 80"/>
+                    <path class="ap-leg ap-leg-r3" d="M130 118 L166 125 L190 145"/>
+                    <path class="ap-leg ap-leg-r4" d="M126 130 L156 150 L178 175"/>
+                  </g>
+                  <!-- leg tips -->
+                  <g fill="#ff0000">
+                    <circle class="ap-tip" cx="20" cy="40" r="3"/>
+                    <circle class="ap-tip" cx="8" cy="80" r="3"/>
+                    <circle class="ap-tip" cx="10" cy="145" r="3"/>
+                    <circle class="ap-tip" cx="22" cy="175" r="3"/>
+                    <circle class="ap-tip" cx="180" cy="40" r="3"/>
+                    <circle class="ap-tip" cx="192" cy="80" r="3"/>
+                    <circle class="ap-tip" cx="190" cy="145" r="3"/>
+                    <circle class="ap-tip" cx="178" cy="175" r="3"/>
+                  </g>
+                  <!-- body (central) -->
+                  <ellipse class="ap-body" cx="100" cy="115" rx="34" ry="26" fill="#0a0a0f" stroke="#ff3b3b" stroke-width="2.2"/>
+                  <!-- body plates -->
+                  <ellipse cx="100" cy="115" rx="22" ry="16" fill="#120000" stroke="#ff3b3b" stroke-width="1.2"/>
+                  <line x1="78" y1="108" x2="122" y2="108" stroke="#ff3b3b" stroke-width="0.8" opacity="0.5"/>
+                  <line x1="78" y1="122" x2="122" y2="122" stroke="#ff3b3b" stroke-width="0.8" opacity="0.5"/>
+                  <!-- head -->
+                  <circle class="ap-plate" cx="100" cy="78" r="20" fill="#120000" stroke="#ff3b3b" stroke-width="2"/>
+                  <!-- visor -->
+                  <rect class="ap-visor" x="82" y="70" width="36" height="14" rx="4" fill="url(#ap-glow)" filter="url(#ap-glowf)"/>
+                  <!-- eyes -->
+                  <g class="ap-eyes">
+                    <rect class="ap-eye ap-eye-l" x="86" y="73" width="10" height="8" rx="2" fill="#ff0000"/>
+                    <rect class="ap-eye ap-eye-r" x="104" y="73" width="10" height="8" rx="2" fill="#ff0000"/>
+                  </g>
+                  <!-- mouth -->
+                  <path class="ap-mouth" d="M90 90 Q100 96 110 90" stroke="#ff3b3b" stroke-width="2" fill="none" stroke-linecap="round"/>
+                  <!-- mandibles -->
+                  <path d="M88 94 L80 102" stroke="#ff3b3b" stroke-width="1.4"/>
+                  <path d="M112 94 L120 102" stroke="#ff3b3b" stroke-width="1.4"/>
+                  <!-- top sensor -->
+                  <circle cx="100" cy="58" r="3" fill="#ff0000" class="ap-tip"/>
+                  <line x1="100" y1="60" x2="100" y2="68" stroke="#ff3b3b" stroke-width="1"/>
+                  <!-- chest core -->
+                  <circle cx="100" cy="115" r="4" fill="#ff0000" opacity="0.9">
+                    <animate attributeName="opacity" values="0.4;1;0.4" dur="1.6s" repeatCount="indefinite"/>
+                  </circle>
+                </svg>
+                <div class="ap-state" id="ap-state">IDLE</div>
+              </div>
+            </div>
+            <div class="ap-log-wrap">
+              <div class="ap-log-head">
+                <span>MAELSTROM WRAITH — AUTO CAPTURE LOG</span>
+                <span class="ap-log-count" id="ap-log-count">0</span>
+              </div>
+              <div class="ap-log" id="ap-log"></div>
+            </div>
+          </div>
         </div>
 
         <div class="panel" style="margin-top:16px">
@@ -432,6 +593,27 @@
               <thead><tr><th>IP</th><th>MAC</th><th>Hostname</th><th>Status</th></tr></thead>
               <tbody><tr><td colspan="4" class="empty">No clients on the rogue AP yet</td></tr></tbody>
             </table>
+          </div>
+        </div>
+
+        <div class="grid2" style="margin-bottom:16px">
+          <div class="panel chart-panel">
+            <div class="chart-head">
+              <h3>Event rate <span class="chart-sub">mgmt frames per second</span></h3>
+              <div class="chart-legend">
+                <span><i style="background:#5fd0ff"></i>probes</span>
+                <span><i style="background:#ffb454"></i>auth</span>
+                <span><i style="background:#c084fc"></i>assoc</span>
+                <span><i style="background:#ff5c5c"></i>deauth</span>
+              </div>
+            </div>
+            <canvas id="chart-mon-events" class="chart"></canvas>
+          </div>
+          <div class="panel chart-panel">
+            <div class="chart-head">
+              <h3>Noisiest stations <span class="chart-sub">frames captured</span></h3>
+            </div>
+            <canvas id="chart-mon-clients" class="chart"></canvas>
           </div>
         </div>
 
@@ -470,18 +652,167 @@
 
       <!-- ============ RECON VIEW ============ -->
       <section id="view-recon" style="display:none">
-        <div class="panel">
-          <h3>Wi-Fi recon <span class="hint" style="font-weight:normal">— live 802.11 scan, pick a target for the kill chain</span></h3>
-          <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
-            <button class="btn primary" id="btn-wifi-scan">&#9853; SCAN FOR APs</button>
-            <input id="wifi-filter" placeholder="Filter: ssid / bssid / vendor / security" style="max-width:280px">
-            <span class="hint" id="wifi-scan-state">No scan yet</span>
+        <div class="panel recon-hero">
+          <div class="recon-hero-head">
+            <div class="recon-title">
+              <h3>Radio recon <span class="hint" style="font-weight:normal;text-transform:none;letter-spacing:0">— passive 802.11 telemetry off the monitor vif. Never transmits.</span></h3>
+              <div class="recon-sub">
+                <span class="recon-pill idle" id="recon-state">RADAR OFFLINE</span>
+                <span id="recon-iface">iface —</span>
+                <span id="recon-uptime">uptime —</span>
+                <span id="recon-last">last frame —</span>
+              </div>
+            </div>
+            <div class="recon-controls">
+              <button class="btn primary" id="btn-radar-toggle">PAUSE RADAR</button>
+              <label class="switch" title="Let the radar own idle channel hopping (karma yields)">
+                <input type="checkbox" id="recon-hop">
+                <span class="track"></span>
+                <span class="lbl">RADAR HOP</span>
+              </label>
+              <select id="recon-dwell" title="Radar channel dwell time">
+                <option value="1">1s dwell</option>
+                <option value="2" selected>2s dwell</option>
+                <option value="3">3s dwell</option>
+                <option value="5">5s dwell</option>
+                <option value="10">10s dwell</option>
+              </select>
+              <button class="btn" id="btn-radar-reset">RESET</button>
+              <button class="btn" id="btn-wifi-scan">&#9853; DEEP SCAN</button>
+              <span class="hint" id="wifi-scan-state">No deep scan yet</span>
+            </div>
           </div>
-          <div class="tbl-wrap" style="margin-top:12px">
+
+          <div class="kpi-strip">
+            <div class="kpi"><div class="kpi-v" id="kpi-aps">0</div><div class="kpi-l">Access points</div><div class="kpi-s" id="kpi-aps-s">0 hidden</div></div>
+            <div class="kpi"><div class="kpi-v" id="kpi-clients">0</div><div class="kpi-l">Clients</div><div class="kpi-s" id="kpi-clients-s">0 randomized</div></div>
+            <div class="kpi"><div class="kpi-v" id="kpi-devices">0</div><div class="kpi-l">Devices</div><div class="kpi-s" id="kpi-devices-s">0 probes</div></div>
+            <div class="kpi"><div class="kpi-v" id="kpi-pps">0</div><div class="kpi-l">Packets / s</div><div class="kpi-s" id="kpi-pps-s">3s average</div></div>
+            <div class="kpi"><div class="kpi-v" id="kpi-eps">0</div><div class="kpi-l">Events / s</div><div class="kpi-s" id="kpi-eps-s">live feed</div></div>
+            <div class="kpi"><div class="kpi-v" id="kpi-frames">0</div><div class="kpi-l">Frames</div><div class="kpi-s" id="kpi-frames-s">0 B</div></div>
+            <div class="kpi"><div class="kpi-v" id="kpi-eapol">0</div><div class="kpi-l">EAPOL</div><div class="kpi-s" id="kpi-eapol-s">handshake frames</div></div>
+            <div class="kpi"><div class="kpi-v" id="kpi-deauth">0</div><div class="kpi-l">Deauth</div><div class="kpi-s" id="kpi-deauth-s">0 errors</div></div>
+          </div>
+        </div>
+
+        <div class="recon-charts">
+          <div class="panel chart-panel">
+            <div class="chart-head">
+              <h3>Traffic</h3>
+              <div class="chart-legend">
+                <span><i style="background:#ff5c5c"></i>total</span>
+                <span><i style="background:#ffb454"></i>mgmt</span>
+                <span><i style="background:#5fd0ff"></i>data</span>
+                <span><i style="background:#c084fc"></i>ctrl</span>
+              </div>
+            </div>
+            <canvas id="chart-traffic" class="chart"></canvas>
+          </div>
+          <div class="panel chart-panel">
+            <div class="chart-head">
+              <h3>Events</h3>
+              <div class="chart-legend">
+                <span><i style="background:#5fd0ff"></i>probes</span>
+                <span><i style="background:#ffb454"></i>auth</span>
+                <span><i style="background:#c084fc"></i>assoc</span>
+                <span><i style="background:#ff5c5c"></i>deauth</span>
+              </div>
+            </div>
+            <canvas id="chart-events" class="chart"></canvas>
+          </div>
+          <div class="panel chart-panel">
+            <div class="chart-head">
+              <h3>Channel activity <span class="chart-sub">frames captured &middot; log scale</span></h3>
+              <div class="chart-legend">
+                <span><i style="background:#ff5c5c"></i>2.4 GHz</span>
+                <span><i style="background:#5fd0ff"></i>5 GHz</span>
+                <span><i style="background:#c084fc"></i>6 GHz</span>
+              </div>
+            </div>
+            <canvas id="chart-channels" class="chart"></canvas>
+          </div>
+          <div class="panel chart-panel">
+            <div class="chart-head">
+              <h3>Radio utilization <span class="chart-sub" id="recon-survey-note"></span></h3>
+              <div class="chart-legend">
+                <span><i style="background:#5fd0ff"></i>busy</span>
+                <span><i style="background:#ffb454"></i>rx</span>
+                <span><i style="background:#c084fc"></i>tx</span>
+              </div>
+            </div>
+            <canvas id="chart-radio" class="chart"></canvas>
+          </div>
+        </div>
+
+        <div class="recon-lower">
+          <div class="panel">
+            <h3>Radio survey</h3>
+            <div class="kv recon-radio" id="recon-radio">
+              <div class="k">interface</div><div class="v">—</div>
+            </div>
+            <div class="tbl-wrap" style="margin-top:14px">
+              <table id="tbl-survey">
+                <thead><tr><th>Ch</th><th>Band</th><th>Busy</th><th>RX</th><th>TX</th><th>Noise</th><th>State</th></tr></thead>
+                <tbody><tr><td colspan="7" class="empty">Survey data unavailable — driver does not expose channel time</td></tr></tbody>
+              </table>
+            </div>
+          </div>
+          <div class="panel">
+            <h3>Breakdown</h3>
+            <div class="bd-grid">
+              <div class="bd-cell">
+                <canvas id="chart-bands" class="donut"></canvas>
+                <div class="bd-cap">BAND SPLIT</div>
+                <div class="bd-legend" id="legend-bands"></div>
+              </div>
+              <div class="bd-cell">
+                <canvas id="chart-security" class="donut"></canvas>
+                <div class="bd-cap">SECURITY</div>
+                <div class="bd-legend" id="legend-security"></div>
+              </div>
+            </div>
+            <div class="bd-stats" id="bd-stats"></div>
+            <div class="bd-sub">TOP CLIENT VENDORS</div>
+            <div class="vendor-list" id="vendor-list"><div class="empty" style="padding:12px">No client vendors seen yet</div></div>
+          </div>
+        </div>
+
+        <div class="panel" style="margin-top:16px">
+          <div class="tbl-head">
+            <h3>Access points <span class="hint" style="text-transform:none;letter-spacing:0">passive inventory + deep scan enrichment</span></h3>
+            <input id="recon-filter" placeholder="Filter ssid / bssid / vendor / security" style="max-width:300px">
+          </div>
+          <div class="tbl-wrap">
             <table id="tbl-wifi">
-              <thead><tr><th>SSID</th><th>BSSID</th><th>Vendor</th><th>Ch</th><th>Band</th><th>Signal</th><th>Security</th><th>Flags</th><th></th></tr></thead>
-              <tbody><tr><td colspan="9" class="empty">Run a scan to list nearby APs</td></tr></tbody>
+              <thead><tr><th>SSID</th><th>BSSID</th><th>Vendor</th><th>Ch</th><th>Band</th><th>Signal</th><th>Security</th><th>Cl</th><th>Frames</th><th>Seen</th><th></th></tr></thead>
+              <tbody><tr><td colspan="11" class="empty">Listening for beacons…</td></tr></tbody>
             </table>
+          </div>
+        </div>
+
+        <div class="panel" style="margin-top:16px">
+          <h3>Clients <span class="hint" style="text-transform:none;letter-spacing:0">associated stations + probe-only devices</span></h3>
+          <div class="tbl-wrap">
+            <table id="tbl-clients">
+              <thead><tr><th>MAC</th><th>Vendor</th><th>SSID</th><th>Ch</th><th>Signal</th><th>Frames</th><th>Data</th><th>Probes</th><th>Seen</th><th></th></tr></thead>
+              <tbody><tr><td colspan="10" class="empty">No clients captured yet</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="recon-live">
+          <div class="panel">
+            <h3>Probe intelligence</h3>
+            <div class="tbl-wrap">
+              <table id="tbl-radar-probes">
+                <thead><tr><th>SSID devices are seeking</th><th>Clients</th><th>Frames</th><th>Ch</th><th>Age</th></tr></thead>
+                <tbody><tr><td colspan="5" class="empty">No probe requests yet</td></tr></tbody>
+              </table>
+            </div>
+          </div>
+          <div class="panel">
+            <h3>Live frame feed</h3>
+            <div class="radar-feed" id="radar-feed"><div class="empty">Waiting for frames…</div></div>
           </div>
         </div>
 
@@ -539,6 +870,21 @@
 
       <!-- ============ LATERAL VIEW ============ -->
       <section id="view-lateral" style="display:none">
+        <div class="grid2" style="margin-bottom:16px">
+          <div class="panel chart-panel">
+            <div class="chart-head">
+              <h3>Owned by protocol</h3>
+            </div>
+            <canvas id="chart-lat-proto" class="donut" style="height:150px"></canvas>
+            <div class="chart-legend donut-legend" id="legend-lat-proto"></div>
+          </div>
+          <div class="panel chart-panel">
+            <div class="chart-head">
+              <h3>Foothold timeline <span class="chart-sub">validated pairs</span></h3>
+            </div>
+            <canvas id="chart-lat-timeline" class="chart"></canvas>
+          </div>
+        </div>
         <div class="panel">
           <h3>Credential spray <span class="hint" style="font-weight:normal">— netexec, captured creds &rarr; footholds</span></h3>
           <div class="grid2">
@@ -607,6 +953,21 @@
 
       <!-- ============ MITM VIEW ============ -->
       <section id="view-mitm" style="display:none">
+        <div class="grid2" style="margin-bottom:16px">
+          <div class="panel chart-panel">
+            <div class="chart-head">
+              <h3>Hash types</h3>
+            </div>
+            <canvas id="chart-mitm-types" class="donut" style="height:150px"></canvas>
+            <div class="chart-legend donut-legend" id="legend-mitm-types"></div>
+          </div>
+          <div class="panel chart-panel">
+            <div class="chart-head">
+              <h3>Capture timeline <span class="chart-sub">hashes held</span></h3>
+            </div>
+            <canvas id="chart-mitm-timeline" class="chart"></canvas>
+          </div>
+        </div>
         <div class="panel">
           <h3>LLMNR / mDNS / NBT-NS poisoning</h3>
           <div class="hint" style="margin-bottom:12px">
@@ -853,6 +1214,22 @@
 
       <!-- ============ LOOT VIEW ============ -->
       <section id="view-loot" style="display:none">
+        <div class="grid2" style="margin-bottom:16px">
+          <div class="panel chart-panel">
+            <div class="chart-head">
+              <h3>Vault composition</h3>
+              <span class="chart-sub" id="loot-mix-total">0 items</span>
+            </div>
+            <canvas id="chart-loot-mix" class="donut" style="height:158px"></canvas>
+            <div class="chart-legend donut-legend" id="legend-loot-mix"></div>
+          </div>
+          <div class="panel chart-panel">
+            <div class="chart-head">
+              <h3>Collection timeline <span class="chart-sub">items in vault</span></h3>
+            </div>
+            <canvas id="chart-loot-timeline" class="chart"></canvas>
+          </div>
+        </div>
         <div class="panel">
           <h3>Loot vault <span class="hint" style="font-weight:normal">— on-device only, mirrored to ~/loot/malstrom/</span></h3>
           <div class="loot-bar">
@@ -860,8 +1237,10 @@
               <button class="tab active" data-tab="creds">Credentials <span class="count" id="lc-creds"></span></button>
               <button class="tab" data-tab="devices">Devices <span class="count" id="lc-devices"></span></button>
               <button class="tab" data-tab="handshakes">Handshakes <span class="count" id="lc-hs"></span></button>
+              <button class="tab" data-tab="pmkid">PMKID <span class="count" id="lc-pmkid"></span></button>
               <button class="tab" data-tab="cracked">Cracked <span class="count" id="lc-cracked"></span></button>
               <button class="tab" data-tab="probes">Probes <span class="count" id="lc-probes"></span></button>
+              <button class="tab" data-tab="pcaps">PCAPs <span class="count" id="lc-pcaps"></span></button>
               <button class="tab" data-tab="files">Files</button>
             </div>
             <div class="loot-exports">
@@ -893,6 +1272,13 @@
           </div>
 
           <div class="tbl-wrap" style="display:none">
+            <table class="cred-table" id="table-pmkid">
+              <thead><tr><th>Time</th><th>BSSID</th><th>SSID</th><th>Client</th><th>Valid</th><th>Pcap</th><th>22000</th><th>PSK</th></tr></thead>
+              <tbody><tr><td colspan="8" class="empty">No PMKID captures yet</td></tr></tbody>
+            </table>
+          </div>
+
+          <div class="tbl-wrap" style="display:none">
             <table class="cred-table" id="table-cracked">
               <thead><tr><th>Time</th><th>SSID</th><th>BSSID</th><th>Password</th><th>Source</th></tr></thead>
               <tbody><tr><td colspan="5" class="empty">Nothing cracked yet — auto-crack runs when a verified capture lands</td></tr></tbody>
@@ -906,6 +1292,14 @@
             </table>
           </div>
 
+          <div class="tbl-wrap" style="display:none">
+            <table class="cred-table" id="table-pcaps">
+              <thead><tr><th>File</th><th>Size</th><th></th><th></th></tr></thead>
+              <tbody><tr><td colspan="4" class="empty">No pcaps captured yet</td></tr></tbody>
+            </table>
+          </div>
+          <div id="pcap-preview" style="display:none; margin-top:10px; padding:10px; border:1px solid rgba(255,60,60,0.25); border-radius:8px; background:rgba(10,0,0,0.4); font-family:var(--mono); font-size:11px; color:#ffb3b3;"></div>
+
           <div id="loot-files" style="display:none">
             <div class="empty">No files in the loot tree yet</div>
           </div>
@@ -914,6 +1308,21 @@
 
       <!-- ============ ALERTS VIEW ============ -->
       <section id="view-alerts" style="display:none">
+        <div class="grid2" style="margin-bottom:16px">
+          <div class="panel chart-panel">
+            <div class="chart-head">
+              <h3>Alerts by source</h3>
+            </div>
+            <canvas id="chart-alert-types" class="donut" style="height:150px"></canvas>
+            <div class="chart-legend donut-legend" id="legend-alert-types"></div>
+          </div>
+          <div class="panel chart-panel">
+            <div class="chart-head">
+              <h3>Alert volume <span class="chart-sub">total in queue</span></h3>
+            </div>
+            <canvas id="chart-alert-timeline" class="chart"></canvas>
+          </div>
+        </div>
         <div class="panel">
           <h3>Alert queue</h3>
           <div id="alert-box"><div class="empty">No alerts</div></div>
@@ -932,6 +1341,7 @@
 
 <div id="toast"></div>
 
+<script src="js/charts.js"></script>
 <script src="js/app.js"></script>
 </body>
 </html>

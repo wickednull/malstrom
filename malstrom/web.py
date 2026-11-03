@@ -95,6 +95,7 @@ MUTATING_ACTIONS = frozenset([
     'save_template', 'clone_page', 'scan_start', 'spray', 'dump', 'crack',
     'mitm', 'relay', 'beacon', 'beacon_cmd', 'beacon_file', 'beacon_fwd',
     'beacon_term', 'beacon_termcmd', 'settings_set', 'key_rotate',
+    'radar_cmd',
 ])
 
 
@@ -395,6 +396,7 @@ class DashHandler(BaseHTTPRequestHandler):
             'template': self._q('template', st.get('template', 'wifi_login')),
             'redir_target': config.REDIRECT_TARGET,
             'auto_harvest': st.get('auto_harvest', False),
+            'capture_only': False,
             'updated': int(time.time()),
         })
         state.set_template_default(self._q('template', 'wifi_login'))
@@ -500,6 +502,25 @@ class DashHandler(BaseHTTPRequestHandler):
         state.emit('CLEANUP', 'loot vault cleared — on-device data wiped '
                               '(pinned items kept)')
         self._json({'ok': 1, 'note': 'loot cleared (pinned items kept)'})
+
+    def _action_loot_delete(self):
+        name = self._q('file')
+        if not name:
+            self._json({'ok': 0, 'error': 'file required'})
+            return
+        root = os.path.realpath(config.LOOT_DIR) + os.path.sep
+        full = os.path.realpath(os.path.join(config.LOOT_DIR, name))
+        if not full.startswith(root) or not os.path.isfile(full):
+            self._json({'ok': 0, 'error': 'not found'})
+            return
+        try:
+            os.remove(full)
+        except OSError as exc:
+            self._json({'ok': 0, 'error': 'delete failed: %s' % exc})
+            return
+        state.emit('INFO', 'loot file deleted: %s' % name)
+        state.mirror_loot()
+        self._json({'ok': 1, 'deleted': name})
 
     def _action_pin(self):
         kind = self._q('kind', '')
@@ -848,6 +869,63 @@ class DashHandler(BaseHTTPRequestHandler):
         if res.get('ok'):
             state.emit('INFO', 'hash crack queued (hashcat 5600/1000)')
         self._json(res)
+
+    def _action_pcap_info(self):
+        """Return a quick tshark/hcx summary of a pcap for the loot vault."""
+        name = self._q('file')
+        if not name:
+            self._json({'ok': 0, 'error': 'file required'})
+            return
+        root = os.path.realpath(config.LOOT_DIR) + os.path.sep
+        full = os.path.realpath(os.path.join(config.LOOT_DIR, name))
+        if not full.startswith(root) or not os.path.isfile(full):
+            self._json({'ok': 0, 'error': 'not found'})
+            return
+        info = {'ok': 1, 'file': name, 'packets': 0, 'eapol': 0,
+                'm1': 0, 'm2': 0, 'm3': 0, 'm4': 0, 'pmkid': 0,
+                'beacons': 0, 'auth': 0, 'assoc': 0, 'essid': ''}
+        if linuxutil.have('tshark'):
+            r = linuxutil.run(['tshark', '-r', full, '-T', 'fields', '-e', 'frame.number'],
+                              timeout=30)
+            info['packets'] = len([l for l in (r.stdout or '').splitlines() if l.strip()])
+            r = linuxutil.run(['tshark', '-r', full, '-Y', 'eapol', '-T', 'fields',
+                               '-e', 'eapol.keydes.type'], timeout=30)
+            info['eapol'] = len([l for l in (r.stdout or '').splitlines() if l.strip()])
+            for key, filt in (('beacons', 'wlan.fc.type_subtype==0x08'),
+                              ('auth', 'wlan.fc.type_subtype==0x0b'),
+                              ('assoc', 'wlan.fc.type_subtype==0x00')):
+                r = linuxutil.run(['tshark', '-r', full, '-Y', filt, '-T', 'fields',
+                                   '-e', 'frame.number'], timeout=30)
+                info[key] = len([l for l in (r.stdout or '').splitlines() if l.strip()])
+            # essid from first beacon
+            r = linuxutil.run(['tshark', '-r', full, '-Y', 'wlan.fc.type_subtype==0x08',
+                               '-T', 'fields', '-e', 'wlan.ssid'], timeout=30)
+            for line in (r.stdout or '').splitlines():
+                if line.strip():
+                    raw = line.strip()
+                    if (len(raw) % 2 == 0 and len(raw) > 0
+                            and all(c in '0123456789abcdefABCDEF' for c in raw)):
+                        try:
+                            dec = bytes.fromhex(raw).decode('utf-8', 'replace')
+                            if all(32 <= ord(ch) < 127 or ch in ' ' for ch in dec):
+                                raw = dec
+                        except ValueError:
+                            pass
+                    info['essid'] = raw
+                    break
+        if linuxutil.have('hcxpcapngtool'):
+            r = linuxutil.run(['hcxpcapngtool', '-o', '/dev/null', full], timeout=60)
+            txt = (r.stdout or '') + (r.stderr or '')
+            import re as _re
+            for label, key in (('EAPOL M1 messages (total)', 'm1'),
+                               ('EAPOL M2 messages (total)', 'm2'),
+                               ('EAPOL M3 messages (total)', 'm3'),
+                               ('EAPOL M4 messages (total)', 'm4'),
+                               ('RSN PMKID (total)', 'pmkid')):
+                m = _re.search(label + r'.*?:\s*(\d+)', txt)
+                if m:
+                    info[key] = int(m.group(1))
+        self._json(info)
 
     def _action_hashcat_export(self):
         """Convert a handshake pcap to hashcat 22000 (PMKID+EAPOL) on the fly."""
@@ -1206,6 +1284,40 @@ class DashHandler(BaseHTTPRequestHandler):
         body = body.replace('__MALSTROM_TARGET__',
                             html.escape(config.REDIRECT_TARGET, quote=True))
         self._json({'ok': 1, 'html': body})
+
+    def _action_radar(self):
+        """Live passive radio telemetry snapshot for the Recon dashboard."""
+        eng = getattr(self.app, 'radar', None)
+        if eng is None:
+            self._json({'ok': 0, 'error': 'radar unavailable'})
+            return
+        self._json(eng.snapshot())
+
+    def _action_radar_cmd(self):
+        """Control the passive radar: on/off, channel hop, dwell, reset."""
+        eng = getattr(self.app, 'radar', None)
+        if eng is None:
+            self._json({'ok': 0, 'error': 'radar unavailable'})
+            return
+
+        def flag(name):
+            val = (self._q(name) or '').strip().lower()
+            if val in ('1', 'on', 'true', 'yes'):
+                return True
+            if val in ('0', 'off', 'false', 'no'):
+                return False
+            return None
+
+        dwell = None
+        raw = (self._q('dwell') or '').strip()
+        if raw:
+            try:
+                dwell = float(raw)
+            except ValueError:
+                self._json({'ok': 0, 'error': 'dwell must be a number of seconds'})
+                return
+        self._json(eng.command(on=flag('on'), hop=flag('hop'), dwell=dwell,
+                               reset=self._q('reset') in ('1', 'on', 'true')))
 
     def _action_scan(self):
         """Live 802.11 recon pass (target picker for the kill chain)."""

@@ -70,7 +70,7 @@ def _key_bytes():
             except OSError:
                 pass
         except OSError:
-            return b''
+            return key
     return key
 
 

